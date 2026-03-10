@@ -4,20 +4,20 @@
 
 const { spawnSync } = require("child_process");
 
-// Map Node.js platform+arch to @claudio/* package name
+// Map Node.js platform+arch to @coco/* package name
 const PLATFORM_MAP = {
-  "darwin arm64": "@claudio/darwin-arm64",
-  "darwin x64": "@claudio/darwin-x64",
-  "linux x64": "@claudio/linux-x64",
-  "linux arm64": "@claudio/linux-arm64",
-  "win32 x64": "@claudio/win32-x64",
+  "darwin arm64": "@coco/darwin-arm64",
+  "darwin x64": "@coco/darwin-x64",
+  "linux x64": "@coco/linux-x64",
+  "linux arm64": "@coco/linux-arm64",
+  "win32 x64": "@coco/win32-x64",
 };
 
 const platformKey = `${process.platform} ${process.arch}`;
 const pkgName = PLATFORM_MAP[platformKey];
 
 if (pkgName) {
-  const binaryName = process.platform === "win32" ? "claudio.exe" : "claudio";
+  const binaryName = process.platform === "win32" ? "coco.exe" : "coco";
   let binaryPath;
   try {
     binaryPath = require.resolve(`${pkgName}/bin/${binaryName}`);
@@ -43,7 +43,7 @@ const denoCheck = spawnSync("deno", ["--version"], {
 if (denoCheck.status === 0) {
   const result = spawnSync(
     "deno",
-    ["run", "-A", "jsr:@myty/claudio", ...process.argv.slice(2)],
+    ["run", "-A", "jsr:@myty/coco", ...process.argv.slice(2)],
     { stdio: "inherit", shell: false },
   );
   process.exit(result.status ?? 1);
@@ -51,7 +51,7 @@ if (denoCheck.status === 0) {
 
 // Neither platform binary nor deno available
 console.error(
-  `Claudio is not supported on this platform (${process.platform}/${process.arch}).\n` +
-    `Please download a binary from https://github.com/myty/claudio/releases or install Deno.`,
+  `Coco is not supported on this platform (${process.platform}/${process.arch}).\n` +
+    `Please download a binary from https://github.com/myty/coco/releases or install Deno.`,
 );
 process.exit(1);

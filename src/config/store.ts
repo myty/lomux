@@ -58,8 +58,13 @@ function validate(config: CocoConfig): void {
     }
   }
   for (const entry of config.agents) {
-    if (!entry.agentName.trim() || !entry.configPath.trim() || !entry.endpoint.trim()) {
-      throw new Error(`ConfigEntry missing required fields for agent "${entry.agentName}"`);
+    if (
+      !entry.agentName.trim() || !entry.configPath.trim() ||
+      !entry.endpoint.trim()
+    ) {
+      throw new Error(
+        `ConfigEntry missing required fields for agent "${entry.agentName}"`,
+      );
     }
   }
 }
@@ -88,5 +93,8 @@ export async function loadConfig(): Promise<CocoConfig> {
 export async function saveConfig(config: CocoConfig): Promise<void> {
   validate(config);
   await Deno.mkdir(configDir(), { recursive: true });
-  await Deno.writeTextFile(configPath(), JSON.stringify(config, null, 2) + "\n");
+  await Deno.writeTextFile(
+    configPath(),
+    JSON.stringify(config, null, 2) + "\n",
+  );
 }

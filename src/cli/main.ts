@@ -16,6 +16,7 @@ import {
   renderFull,
 } from "../tui/render.ts";
 import { disableRawMode, enableRawMode, readKey } from "../tui/input.ts";
+import { fetchModelList } from "../copilot/models.ts";
 
 function showHelp() {
   console.log(`
@@ -205,6 +206,23 @@ async function cmdDoctor(): Promise<void> {
   console.log(`Last 5 errors: ${lastErrors}`);
 }
 
+async function cmdModels(): Promise<void> {
+  const authenticated = await ensureAuthenticated();
+  if (!authenticated) Deno.exit(1);
+
+  const models = await fetchModelList();
+  if (models.length === 0) {
+    console.error("Error: Could not fetch model list from GitHub Copilot.");
+    Deno.exit(1);
+  }
+
+  console.log("Available models (via GitHub Copilot):\n");
+  for (const id of models) {
+    console.log(`  ${id}`);
+  }
+  console.log("\nRun 'coco configure <agent>' to route an agent through Coco.");
+}
+
 async function runTUI(): Promise<void> {
   const [serviceState, config, detectionResults] = await Promise.all([
     getServiceState(),
@@ -381,8 +399,7 @@ async function main() {
       await cmdDoctor();
       break;
     case "models":
-      console.error(`Error: '${subcommand}' not yet implemented.`);
-      Deno.exit(1);
+      await cmdModels();
       break;
     default:
       // T038: non-TTY bare invocation → print status and exit 0
@@ -400,4 +417,3 @@ async function main() {
 if (import.meta.main) {
   await main();
 }
-

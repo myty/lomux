@@ -129,7 +129,10 @@ Deno.test(
       const result = await chat(makeProxyRequest());
 
       assertEquals(result.content[0].type, "text");
-      assertEquals((result.content[0] as TextContentBlock).text, "Hello! How can I help?");
+      assertEquals(
+        (result.content[0] as TextContentBlock).text,
+        "Hello! How can I help?",
+      );
       assertEquals(result.stop_reason, "end_turn");
       assertEquals(result.usage.input_tokens, 10);
       assertEquals(result.usage.output_tokens, 5);
@@ -259,7 +262,9 @@ Deno.test("chat() - 401 response → authentication_error content", async () => 
     const result = await chat(makeProxyRequest());
     assertEquals(result.content[0].type, "text");
     assertEquals(
-      (result.content[0] as TextContentBlock).text.toLowerCase().includes("authentication") ||
+      (result.content[0] as TextContentBlock).text.toLowerCase().includes(
+        "authentication",
+      ) ||
         (result.content[0] as TextContentBlock).text.includes("401"),
       true,
     );
@@ -286,7 +291,9 @@ Deno.test("chat() - 503 response → overloaded_error content", async () => {
     const result = await chat(makeProxyRequest());
     assertEquals(result.content[0].type, "text");
     assertEquals(
-      (result.content[0] as TextContentBlock).text.toLowerCase().includes("overloaded") ||
+      (result.content[0] as TextContentBlock).text.toLowerCase().includes(
+        "overloaded",
+      ) ||
         (result.content[0] as TextContentBlock).text.includes("503"),
       true,
     );

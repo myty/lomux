@@ -248,7 +248,10 @@ export interface OpenAIChatRequest {
   top_p?: number;
   stream?: boolean;
   tools?: OpenAITool[];
-  tool_choice?: "auto" | "none" | "required" | { type: "function"; function: { name: string } };
+  tool_choice?: "auto" | "none" | "required" | {
+    type: "function";
+    function: { name: string };
+  };
 }
 
 export interface OpenAIUsage {

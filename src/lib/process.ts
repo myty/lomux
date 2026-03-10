@@ -51,7 +51,10 @@ export async function isProcessAlive(pid: number): Promise<boolean> {
   try {
     if (Deno.build.os === "windows") {
       const cmd = new Deno.Command("powershell", {
-        args: ["-Command", `Get-Process -Id ${pid} -ErrorAction SilentlyContinue`],
+        args: [
+          "-Command",
+          `Get-Process -Id ${pid} -ErrorAction SilentlyContinue`,
+        ],
         stdout: "piped",
         stderr: "null",
       });

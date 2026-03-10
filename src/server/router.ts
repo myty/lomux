@@ -18,7 +18,7 @@ import {
   openAIError,
   openAIToAnthropic,
 } from "./openai-translate.ts";
-import { resolveModel, DEFAULT_MODEL_MAP } from "../agents/models.ts";
+import { DEFAULT_MODEL_MAP, resolveModel } from "../agents/models.ts";
 import { loadConfig } from "../config/store.ts";
 
 const server = Deno.serve;
@@ -207,7 +207,12 @@ async function handleCountTokens(req: Request): Promise<Response> {
   }
 }
 
-function openAIErrorResponse(status: number, message: string, type: string, code: string): Response {
+function openAIErrorResponse(
+  status: number,
+  message: string,
+  type: string,
+  code: string,
+): Response {
   return new Response(JSON.stringify(openAIError(message, type, code)), {
     status,
     headers: { "Content-Type": "application/json" },
@@ -219,25 +224,48 @@ async function handleChatCompletions(req: Request): Promise<Response> {
   try {
     body = await req.json();
   } catch {
-    return openAIErrorResponse(400, "Invalid JSON body", "invalid_request_error", "invalid_value");
+    return openAIErrorResponse(
+      400,
+      "Invalid JSON body",
+      "invalid_request_error",
+      "invalid_value",
+    );
   }
 
   if (!body || typeof body !== "object") {
-    return openAIErrorResponse(400, "Request body is required", "invalid_request_error", "invalid_value");
+    return openAIErrorResponse(
+      400,
+      "Request body is required",
+      "invalid_request_error",
+      "invalid_value",
+    );
   }
 
   const r = body as Record<string, unknown>;
   if (typeof r.model !== "string" || !r.model) {
-    return openAIErrorResponse(400, "model is required", "invalid_request_error", "invalid_value");
+    return openAIErrorResponse(
+      400,
+      "model is required",
+      "invalid_request_error",
+      "invalid_value",
+    );
   }
   if (!Array.isArray(r.messages) || r.messages.length === 0) {
-    return openAIErrorResponse(400, "messages is required and must be non-empty", "invalid_request_error", "invalid_value");
+    return openAIErrorResponse(
+      400,
+      "messages is required and must be non-empty",
+      "invalid_request_error",
+      "invalid_value",
+    );
   }
 
   const openAIReq = body as OpenAIChatRequest;
   const config = await loadConfig().catch(() => null);
   const resolvedModel = resolveModel(openAIReq.model, config?.modelMap ?? {});
-  const anthropicReq: ProxyRequest = { ...openAIToAnthropic(openAIReq), model: resolvedModel };
+  const anthropicReq: ProxyRequest = {
+    ...openAIToAnthropic(openAIReq),
+    model: resolvedModel,
+  };
 
   if (anthropicReq.stream) {
     const state = makeStreamState(resolvedModel);
@@ -257,7 +285,9 @@ async function handleChatCompletions(req: Request): Promise<Response> {
             "api_error",
             "service_unavailable",
           );
-          controller.enqueue(encoder.encode(`data: ${JSON.stringify(errBody)}\n\n`));
+          controller.enqueue(
+            encoder.encode(`data: ${JSON.stringify(errBody)}\n\n`),
+          );
         } finally {
           controller.close();
         }
@@ -324,7 +354,9 @@ function errorResponse(
   });
 }
 
-export async function startServer(): Promise<{ port: number; stop: () => Promise<void> }> {
+export async function startServer(): Promise<
+  { port: number; stop: () => Promise<void> }
+> {
   const config = await getConfig();
   addShutdownHandler();
 

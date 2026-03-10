@@ -87,7 +87,10 @@ Deno.test("configureAgent(aider) — backs up existing file before overwriting",
 Deno.test("configureAgent(aider) — preserves existing YAML keys on merge", async () => {
   await withTempHome(async (homeDir) => {
     const existingPath = `${homeDir}/.aider.conf.yml`;
-    await Deno.writeTextFile(existingPath, "model: gpt-4\nauto-commits: false\n");
+    await Deno.writeTextFile(
+      existingPath,
+      "model: gpt-4\nauto-commits: false\n",
+    );
 
     const config = makeTempConfig(homeDir);
     await configureAgent("aider", 11434, config, {

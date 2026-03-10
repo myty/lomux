@@ -49,7 +49,10 @@ Deno.test("OpenAI /v1/chat/completions — missing model returns 400", async () 
     });
     assertEquals(res.status, 400);
     const body = await res.json() as Record<string, unknown>;
-    assertEquals((body.error as Record<string, unknown>).type, "invalid_request_error");
+    assertEquals(
+      (body.error as Record<string, unknown>).type,
+      "invalid_request_error",
+    );
   } finally {
     await s.shutdown();
   }
@@ -62,7 +65,10 @@ Deno.test("OpenAI /v1/chat/completions — missing messages returns 400", async 
     const res = await post(port, "/v1/chat/completions", { model: "gpt-4o" });
     assertEquals(res.status, 400);
     const body = await res.json() as Record<string, unknown>;
-    assertEquals((body.error as Record<string, unknown>).type, "invalid_request_error");
+    assertEquals(
+      (body.error as Record<string, unknown>).type,
+      "invalid_request_error",
+    );
   } finally {
     await s.shutdown();
   }

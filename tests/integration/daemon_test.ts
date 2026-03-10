@@ -136,7 +136,11 @@ Deno.test({
           break;
         }
       }
-      assertEquals(bound, true, "Port 11435 never bound after conflict on 11434");
+      assertEquals(
+        bound,
+        true,
+        "Port 11435 never bound after conflict on 11434",
+      );
 
       await new Deno.Command("bin/coco", { args: ["stop"] }).output();
       proc.unref();

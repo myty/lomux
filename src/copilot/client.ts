@@ -204,7 +204,8 @@ export async function chat(request: ProxyRequest): Promise<ProxyResponse> {
     ...(request.top_p !== undefined && { top_p: request.top_p }),
     ...(request.tools && request.tools.length > 0 &&
       { tools: toOpenAITools(request.tools) }),
-    ...(request.tool_choice && { tool_choice: toOpenAIToolChoice(request.tool_choice) }),
+    ...(request.tool_choice &&
+      { tool_choice: toOpenAIToolChoice(request.tool_choice) }),
   };
 
   const response = await fetchWithRetry(COPILOT_CHAT_URL, {
@@ -247,7 +248,10 @@ export async function chat(request: ProxyRequest): Promise<ProxyResponse> {
     for (const toolCall of choice.message.tool_calls) {
       let input: Record<string, unknown>;
       try {
-        input = JSON.parse(toolCall.function.arguments) as Record<string, unknown>;
+        input = JSON.parse(toolCall.function.arguments) as Record<
+          string,
+          unknown
+        >;
       } catch {
         input = { _raw: toolCall.function.arguments };
       }
@@ -296,7 +300,8 @@ export async function chatStream(
     ...(request.top_p !== undefined && { top_p: request.top_p }),
     ...(request.tools && request.tools.length > 0 &&
       { tools: toOpenAITools(request.tools) }),
-    ...(request.tool_choice && { tool_choice: toOpenAIToolChoice(request.tool_choice) }),
+    ...(request.tool_choice &&
+      { tool_choice: toOpenAIToolChoice(request.tool_choice) }),
   };
 
   const response = await fetchWithRetry(COPILOT_CHAT_URL, {
@@ -376,7 +381,9 @@ export async function chatStream(
     });
   };
 
-  const emitDone = (stopReason: "end_turn" | "max_tokens" | "tool_use" | null) => {
+  const emitDone = (
+    stopReason: "end_turn" | "max_tokens" | "tool_use" | null,
+  ) => {
     if (doneEmitted) return;
     doneEmitted = true;
 

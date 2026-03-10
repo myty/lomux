@@ -62,7 +62,9 @@ export function anthropicToOpenAI(
   requestedModel: string,
 ): OpenAIChatResponse {
   const text = res.content
-    .filter((b): b is Extract<ContentBlock, { type: "text" }> => b.type === "text")
+    .filter((b): b is Extract<ContentBlock, { type: "text" }> =>
+      b.type === "text"
+    )
     .map((b) => b.text)
     .join("");
 
@@ -124,7 +126,11 @@ export function anthropicStreamEventToOpenAI(
         object: "chat.completion.chunk",
         created,
         model: state.model,
-        choices: [{ index: 0, delta: { role: "assistant", content: "" }, finish_reason: null }],
+        choices: [{
+          index: 0,
+          delta: { role: "assistant", content: "" },
+          finish_reason: null,
+        }],
       };
       return `data: ${JSON.stringify(chunk)}\n\n`;
     }
@@ -137,7 +143,11 @@ export function anthropicStreamEventToOpenAI(
         object: "chat.completion.chunk",
         created,
         model: state.model,
-        choices: [{ index: 0, delta: { content: event.delta.text }, finish_reason: null }],
+        choices: [{
+          index: 0,
+          delta: { content: event.delta.text },
+          finish_reason: null,
+        }],
       };
       return `data: ${JSON.stringify(chunk)}\n\n`;
     }
@@ -151,7 +161,11 @@ export function anthropicStreamEventToOpenAI(
         object: "chat.completion.chunk",
         created,
         model: state.model,
-        choices: [{ index: 0, delta: {}, finish_reason: stopReasonToFinishReason(stopReason) }],
+        choices: [{
+          index: 0,
+          delta: {},
+          finish_reason: stopReasonToFinishReason(stopReason),
+        }],
       };
       return `data: ${JSON.stringify(chunk)}\n\n`;
     }

@@ -83,7 +83,8 @@ Deno.test({
       stderr: "piped",
     }).outputSync();
     const output = new TextDecoder().decode(process.stdout);
-    const hasAnsiClear = output.includes("\x1b[2J") || output.includes("\x1b[H");
+    const hasAnsiClear = output.includes("\x1b[2J") ||
+      output.includes("\x1b[H");
     assertEquals(hasAnsiClear, false);
   },
 });
@@ -106,4 +107,3 @@ Deno.test({
     assertEquals(status.code, 0);
   },
 });
-

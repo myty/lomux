@@ -9,7 +9,11 @@
 import { parse as parseYaml, stringify as stringifyYaml } from "@std/yaml";
 import { parse as parseToml, stringify as stringifyToml } from "@std/toml";
 import { join } from "@std/path";
-import { type CocoConfig, type ConfigEntry, saveConfig } from "../config/store.ts";
+import {
+  type CocoConfig,
+  type ConfigEntry,
+  saveConfig,
+} from "../config/store.ts";
 import { getAgent } from "./registry.ts";
 
 // ---------------------------------------------------------------------------
@@ -32,9 +36,9 @@ export interface ConfigureOptions {
 function resolveHome(options?: ConfigureOptions): string {
   return (
     options?.homeDir ??
-    Deno.env.get("HOME") ??
-    Deno.env.get("USERPROFILE") ??
-    "."
+      Deno.env.get("HOME") ??
+      Deno.env.get("USERPROFILE") ??
+      "."
   );
 }
 
@@ -291,7 +295,10 @@ async function writeGptEngineer(
 // Dispatch table
 // ---------------------------------------------------------------------------
 
-type AgentWriter = (port: number, options?: ConfigureOptions) => Promise<WriteResult>;
+type AgentWriter = (
+  port: number,
+  options?: ConfigureOptions,
+) => Promise<WriteResult>;
 
 const AGENT_WRITERS: Record<string, AgentWriter> = {
   "claude-code": writeClaudeCode,

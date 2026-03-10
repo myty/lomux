@@ -34,6 +34,9 @@ export function resolveModel(
   requested: string,
   userOverrides: Record<string, string> = {},
 ): string {
-  const merged: Record<string, string> = { ...DEFAULT_MODEL_MAP, ...userOverrides };
+  const merged: Record<string, string> = {
+    ...DEFAULT_MODEL_MAP,
+    ...userOverrides,
+  };
   return merged[requested] ?? requested;
 }

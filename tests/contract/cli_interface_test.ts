@@ -49,4 +49,3 @@ Deno.test("CLI contract: -h alias prints usage and exits 0", async () => {
   assertStringIncludes(result.stdout, "--version");
   assertEquals(result.exitCode, 0);
 });
-

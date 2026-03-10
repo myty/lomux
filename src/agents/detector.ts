@@ -8,7 +8,11 @@
  * Priority: installed > detected > not-installed
  */
 
-import { type AgentRecord, AGENT_REGISTRY, type AgentState } from "./registry.ts";
+import {
+  AGENT_REGISTRY,
+  type AgentRecord,
+  type AgentState,
+} from "./registry.ts";
 
 /** Options to override default scan paths — primarily for testing. */
 export interface DetectorOptions {

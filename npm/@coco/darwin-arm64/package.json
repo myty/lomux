@@ -1,0 +1,8 @@
+{
+  "name": "@coco/darwin-arm64",
+  "version": "0.2.0",
+  "os": ["darwin"],
+  "cpu": ["arm64"],
+  "preferUnplugged": true,
+  "bin": {}
+}

@@ -1,29 +1,36 @@
-# Claudio
+# Coco
 
-**GitHub Copilot bridge for Claude Code** — Use GitHub Copilot's API through Claude's interface.
+**Universal local AI gateway** — Route any coding agent through GitHub Copilot's API.
 
-Claudio acts as a proxy server that translates Claude Code's API calls to GitHub Copilot's format, allowing you to leverage your existing GitHub Copilot subscription with Claude's superior user experience.
+Coco runs a local background service that exposes Anthropic-compatible and OpenAI-compatible
+API endpoints backed by your GitHub Copilot subscription. Any tool that speaks either API
+protocol can be wired through Coco in seconds.
 
 ## Features
 
-- 🔗 **Seamless Integration** — Use Claude Code with your existing GitHub Copilot subscription
-- 🚀 **Zero Configuration** — Automatically handles authentication and proxy setup
-- 🌐 **Cross-Platform** — Works on macOS, Linux, and Windows
-- ⚡ **Native Performance** — Compiled binaries for optimal speed
-- 🔄 **Stream Support** — Real-time streaming responses from GitHub Copilot
-- 📦 **Multiple Install Methods** — npm, Homebrew, Deno, mise, or direct download
+- 🔗 **Anthropic + OpenAI compatible** — `/v1/messages` and `/v1/chat/completions` endpoints
+- 🚀 **Background service** — `coco start` / `coco stop` / `coco restart`
+- 🤖 **Multi-agent support** — Claude Code, Cline, Kilo, OpenCode, Goose, Aider, GPT-Engineer
+- 🖥️ **Minimal TUI** — bare `coco` opens a radio-toggle interface for batch configuration
+- 🔍 **Agent detection** — scans PATH and VS Code extension dirs to find installed agents
+- ♻️ **Reversible config** — every `coco configure` is undone by `coco unconfigure`
+- ⚡ **Stream support** — real-time streaming responses
+- 📦 **Multiple install methods** — npm, Deno/JSR, or direct binary
 
 ## How It Works
 
-1. **Authentication** — Claudio authenticates with GitHub using OAuth device flow
-2. **Proxy Server** — Starts a local proxy server that translates API calls
-3. **Bridge** — Claude Code requests → Claudio proxy → GitHub Copilot API
-4. **Response** — GitHub Copilot responses → Claudio proxy → Claude Code
+```
+Coding agent → coco proxy (127.0.0.1:11434) → GitHub Copilot API
+                │
+                ├── POST /v1/messages           (Anthropic)
+                ├── POST /v1/chat/completions   (OpenAI)
+                ├── GET  /v1/models
+                └── GET  /health
+```
 
-## Prerequisites
-
-- **GitHub Copilot subscription** — Individual, Business, or Enterprise
-- **Claude Code** — Download from [Claude's website](https://claude.ai/claude-code)
+1. **`coco start`** — authenticates with GitHub and starts the background proxy
+2. **`coco configure <agent>`** — writes the agent's config file to point at `http://127.0.0.1:11434`
+3. The agent's API calls are translated and forwarded to GitHub Copilot
 
 ## Installation
 
@@ -32,10 +39,10 @@ Claudio acts as a proxy server that translates Claude Code's API calls to GitHub
 **Node.js ≥18 required, no Deno installation needed**
 
 ```bash
-npm install -g claudio
+npm install -g coco
 ```
 
-The npm package automatically downloads the native binary for your platform. Supported platforms:
+The npm package automatically downloads the native binary for your platform:
 
 | OS      | Architecture | Status |
 |---------|--------------|--------|
@@ -45,115 +52,123 @@ The npm package automatically downloads the native binary for your platform. Sup
 | Linux   | arm64        | ✅     |
 | Windows | x64          | ✅     |
 
-### Direct Binary Download
-
-Download platform-specific binaries from [GitHub Releases](https://github.com/myty/claudio/releases):
-
-<details>
-<summary>macOS Installation</summary>
-
-```bash
-# Apple Silicon (M1/M2/M3)
-curl -Lo claudio https://github.com/myty/claudio/releases/latest/download/claudio-macos-arm64
-chmod +x claudio
-sudo mv claudio /usr/local/bin/
-
-# Intel Macs
-curl -Lo claudio https://github.com/myty/claudio/releases/latest/download/claudio-macos-x64
-chmod +x claudio
-sudo mv claudio /usr/local/bin/
-```
-
-**macOS Gatekeeper Notice:** You may need to remove the quarantine flag:
-```bash
-xattr -d com.apple.quarantine ./claudio
-```
-
-</details>
-
-<details>
-<summary>Linux Installation</summary>
-
-```bash
-# x64 (most common)
-curl -Lo claudio https://github.com/myty/claudio/releases/latest/download/claudio-linux-x64
-chmod +x claudio
-sudo mv claudio /usr/local/bin/
-
-# ARM64 (Raspberry Pi, Apple Silicon Linux)
-curl -Lo claudio https://github.com/myty/claudio/releases/latest/download/claudio-linux-arm64
-chmod +x claudio
-sudo mv claudio /usr/local/bin/
-```
-
-</details>
-
 ### JSR (Deno Runtime)
 
-**Requires [Deno](https://deno.land) to be installed**
-
 ```bash
-# Install globally
-deno install -A -g jsr:@myty/claudio
-
-# Or run directly without installing
-deno run -A jsr:@myty/claudio --version
+deno install -A -g jsr:@myty/coco
 ```
 
-### mise (Version Manager)
+### Direct Binary Download
 
-```bash
-mise use -g claudio@0.1.0
-```
-
-Or add to your `.mise.toml`:
-
-```toml
-[tools]
-claudio = "0.1.0"
-```
+Download platform-specific binaries from [GitHub Releases](https://github.com/myty/coco/releases).
 
 ## Usage
 
-### Basic Usage
+### TUI (recommended for first-time setup)
 
 ```bash
-# Start Claudio (launches Claude Code with proxy)
-claudio
-
-# Pass options to Claude Code
-claudio --dark-mode
-claudio --verbose
-
-# Resume a specific session
-claudio --resume <session-id>
+coco          # opens the interactive TUI
 ```
 
-### Command Line Options
-
 ```
-claudio [OPTIONS] [CLAUDE_ARGS...]
+Coco — Local AI Gateway
+──────────────────────────────────────────────
+Status: Running on http://localhost:11434
+Copilot: Authenticated ✓
 
-Options:
-  --help       Show this help message
-  --version    Show version information
-  --server     Start the proxy server (default)
+Agents
+──────────────────────────────────────────────
+[x] Claude Code      detected
+[ ] Cline            installed
+[x] Kilo Code        installed
+[ ] OpenCode         detected
+[ ] Goose            detected
+[-] Aider            installed  (misconfigured)
+[ ] GPT-Engineer     installed
 
-Any options not listed above are forwarded verbatim to Claude Code.
+──────────────────────────────────────────────
+Space: toggle   Enter: apply   q: quit
 ```
 
-### First Run
+Keys: **Space** toggles selection, **Enter** applies, **↑/↓** moves cursor, **q** quits without changes.
 
-1. **Run Claudio**: `claudio`
-2. **Authenticate**: Follow the GitHub OAuth flow in your browser
-3. **Start Coding**: Claude Code will launch automatically with GitHub Copilot backend
+### CLI Commands
 
-### Session Management
+| Command | Description |
+|---|---|
+| `coco` | Open the interactive TUI (on TTY) or print status (non-TTY) |
+| `coco start` | Start the background proxy service |
+| `coco stop` | Stop the background proxy service |
+| `coco restart` | Restart the background proxy service |
+| `coco status` | Print service and auth status |
+| `coco configure <agent>` | Write config for a specific agent |
+| `coco unconfigure <agent>` | Revert config for a specific agent |
+| `coco doctor` | Scan and report all agents' states |
+| `coco models` | List available Copilot model IDs |
+| `coco --help` | Show help |
+| `coco --version` | Show version |
 
-Claudio automatically manages sessions and will display the session ID when you exit:
+### Quick Start
 
 ```bash
-Run `claudio --resume abc123` to resume.
+# 1. Start the proxy
+coco start
+# → Coco is running on http://localhost:11434
+
+# 2. Configure Claude Code
+coco configure claude-code
+# → claude-code configured.
+
+# 3. Check what's running
+coco doctor
+
+# 4. Stop the proxy
+coco stop
+```
+
+### Supported Agents
+
+| Agent | Binary | Extension |
+|---|---|---|
+| Claude Code | `claude` | `anthropic.claude-code` |
+| Cline | `cline` | `saoudrizwan.claude-dev` |
+| Kilo Code | `kilo` | `kilo.kilo-code` |
+| OpenCode | `opencode` | `opencode.opencode` |
+| Goose | `goose` | `0xgoose.goose` |
+| Aider | `aider` | — |
+| GPT-Engineer | `gpt-engineer` | — |
+
+## Architecture
+
+```
+src/
+├── cli/              # Command-line interface (main.ts)
+├── server/           # HTTP proxy (router, OpenAI/Anthropic translation)
+├── service/          # Daemon lifecycle + status
+├── agents/           # Registry, detector, config writers, model map
+├── tui/              # Renderer and raw-mode input
+├── auth/             # GitHub OAuth device flow
+├── copilot/          # GitHub Copilot API client
+├── config/           # ~/.coco/config.json store
+└── lib/              # Shared utilities (log, process, errors, token)
+```
+
+## Prerequisites
+
+- **GitHub Copilot subscription** — Individual, Business, or Enterprise
+
+## Development
+
+```bash
+# Clone and run quality checks
+git clone https://github.com/myty/coco.git && cd coco
+deno task quality
+
+# Run in development mode
+deno task dev
+
+# Compile native binary
+deno task compile
 ```
 
 ## Troubleshooting
@@ -161,72 +176,29 @@ Run `claudio --resume abc123` to resume.
 <details>
 <summary>Common Issues</summary>
 
-### "Claude Code not found"
-- Install Claude Code from [claude.ai/claude-code](https://claude.ai/claude-code)
-- Ensure it's in your PATH or default installation location
-
 ### "Authentication failed"
 - Verify you have an active GitHub Copilot subscription
-- Check your internet connection
-- Try clearing stored credentials and re-authenticating
+- Try again — device flow tokens sometimes need a moment
 
-### "Connection refused"
-- Ensure no other processes are using the proxy port
-- Check firewall settings
-- Try restarting Claudio
+### "Port already in use"
+- Coco automatically scans for an available port starting from 11434
+- Check `coco status` to see the actual port in use
 
-### macOS "Cannot open" error
-- Run `xattr -d com.apple.quarantine claudio` to remove quarantine
-- Or use "Open" from right-click context menu first time
+### "Agent is misconfigured"
+- Run `coco unconfigure <agent>` then `coco configure <agent>` again
+- Run `coco doctor` for a full status report
+
+### macOS "Cannot open" error (binary download)
+- Run `xattr -d com.apple.quarantine coco` to remove quarantine
 
 </details>
 
-## Development
-
-Want to contribute? Here's how to get started:
-
-```bash
-# Clone the repository
-git clone https://github.com/myty/claudio.git
-cd claudio
-
-# Install Deno (if not already installed)
-curl -fsSL https://deno.land/install.sh | sh
-
-# Run in development mode
-deno task dev
-
-# Run quality checks (lint + format + typecheck + tests)
-deno task quality
-
-# Compile native binary
-deno task compile
-
-# Sync version across all artifacts
-deno task sync-version
-```
-
-### Project Structure
-
-```
-src/
-├── cli/          # Command-line interface
-├── server/       # Proxy server and routing
-├── auth/         # GitHub OAuth authentication
-├── copilot/      # GitHub Copilot API integration
-└── lib/          # Shared utilities
-```
-
 ## License
 
-MIT License - see [LICENSE](LICENSE) for details.
-
-## Contributing
-
-Contributions are welcome! Please read our [Contributing Guidelines](CONTRIBUTING.md) first.
+MIT License — see [LICENSE](LICENSE) for details.
 
 ## Acknowledgments
 
+- **GitHub** for the Copilot API
 - **Anthropic** for Claude Code
-- **GitHub** for Copilot API
 - **Deno** for the excellent runtime and tooling

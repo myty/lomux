@@ -52,6 +52,32 @@ async function fetchModelIds(): Promise<Set<string>> {
   return new Set(body.data.map((m) => m.id));
 }
 
+/**
+ * Fetch the full ordered list of Copilot model IDs.
+ * Reads from the Copilot /models API — does not use the ID-only cache.
+ */
+export async function fetchModelList(): Promise<string[]> {
+  const { token } = await getToken();
+  const response = await fetch("https://api.githubcopilot.com/models", {
+    headers: {
+      "Authorization": `Bearer ${token}`,
+      "Content-Type": "application/json",
+      "editor-version": `vscode/${VSCODE_VERSION}`,
+      "editor-plugin-version": `copilot-chat/${COPILOT_PLUGIN_VERSION}`,
+      "user-agent": `GitHubCopilotChat/${COPILOT_PLUGIN_VERSION}`,
+      "x-github-api-version": COPILOT_API_VERSION,
+    },
+  });
+
+  if (!response.ok) {
+    await response.body?.cancel();
+    return [];
+  }
+
+  const body = await response.json() as CopilotModelsResponse;
+  return body.data.map((m) => m.id);
+}
+
 /** Returns the cached set of Copilot model IDs, fetching once if needed. */
 async function getAvailableModelIds(): Promise<Set<string>> {
   if (cachedModelIds !== null) return cachedModelIds;

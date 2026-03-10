@@ -20,9 +20,15 @@ Deno.test("model translation — unknown model passes through unchanged", () => 
 });
 
 Deno.test("model translation — user override wins", () => {
-  assertEquals(resolveModel("gpt-4o", { "gpt-4o": "custom-model" }), "custom-model");
+  assertEquals(
+    resolveModel("gpt-4o", { "gpt-4o": "custom-model" }),
+    "custom-model",
+  );
 });
 
 Deno.test("model translation — user can introduce new alias", () => {
-  assertEquals(resolveModel("my-alias", { "my-alias": "target-model" }), "target-model");
+  assertEquals(
+    resolveModel("my-alias", { "my-alias": "target-model" }),
+    "target-model",
+  );
 });

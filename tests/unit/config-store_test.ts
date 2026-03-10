@@ -1,6 +1,10 @@
 import { assertEquals, assertRejects } from "@std/assert";
 import { join } from "@std/path";
-import { DEFAULT_CONFIG, loadConfig, saveConfig } from "../../src/config/store.ts";
+import {
+  DEFAULT_CONFIG,
+  loadConfig,
+  saveConfig,
+} from "../../src/config/store.ts";
 import type { CocoConfig } from "../../src/config/store.ts";
 
 // Use a temp directory for all tests to avoid touching ~/.coco

@@ -1,6 +1,6 @@
-# claudio Development Guidelines
+# Coco Development Guidelines
 
-Auto-generated from all feature plans. Last updated: 2026-02-28
+Auto-generated from all feature plans. Last updated: 2026-03-10
 
 ## Active Technologies
 
@@ -10,63 +10,84 @@ Auto-generated from all feature plans. Last updated: 2026-02-28
 - **Deno Standard Library** - HTTP server, utilities, testing
 
 ### Key Dependencies
-- **GitHub Copilot API** - AI code completion service
+- **GitHub Copilot API** - AI code completion service (models, chat)
 - **OAuth 2.0 Device Flow** - Authentication with GitHub
-- **HTTP/2** - Proxy server protocol support
-- **JSON-RPC** - API communication format
+- **@std/yaml / @std/toml** - Agent config file parsing and writing
+- **ANSI/VT100 sequences** - TUI renderer (no external dependencies)
 
 ### Platform Integration
 - **Cross-platform binaries** - macOS (arm64/x64), Linux (x64/arm64), Windows (x64)
-- **NPM distribution** - Node.js package manager integration
-- **JSR registry** - Deno package distribution
+- **NPM distribution** - `coco` package (`npm install -g coco`)
+- **JSR registry** - `jsr:@myty/coco`
 - **GitHub Actions** - CI/CD and automation
 
 ### Architecture Patterns
-- **Proxy server pattern** - Request/response translation
-- **Command pattern** - CLI interface design
+- **Proxy server pattern** - Request/response translation (Anthropic + OpenAI)
+- **Background daemon** - Self-spawn with `Deno.Command` + PID file
+- **Command pattern** - CLI interface design (9 sub-commands)
 - **OAuth device flow** - Secure authentication
-- **Stateless design** - No persistent state management
+- **Reversible configuration** - Backup/restore per-agent config files
 
 ## Project Structure
 
 ```text
 src/
 ├── cli/              # Command-line interface
-│   ├── main.ts      # Main entry point
-│   ├── launch.ts    # Claude Code launcher
-│   ├── session.ts   # Session management
+│   ├── main.ts      # Main entry point + all sub-command handlers
 │   └── auth.ts      # Authentication handling
 ├── server/          # Proxy server implementation
-│   ├── router.ts    # Request routing and handling
-│   ├── server.ts    # HTTP server setup
-│   ├── transform.ts # Request/response transformation
-│   ├── copilot.ts   # GitHub Copilot integration
-│   ├── types.ts     # Server type definitions
+│   ├── router.ts    # Request routing — /v1/messages, /v1/chat/completions, /v1/models, /health
+│   ├── server.ts    # HTTP server setup + graceful shutdown
+│   ├── transform.ts # Anthropic request/response transformation
+│   ├── openai-translate.ts  # OpenAI↔Anthropic bidirectional translation
+│   ├── copilot.ts   # GitHub Copilot forwarding
+│   ├── types.ts     # Anthropic + OpenAI type definitions
 │   └── mod.ts       # Module exports
+├── service/         # Daemon lifecycle
+│   ├── daemon.ts    # startDaemon/stopDaemon/getDaemonPid, port-conflict scan
+│   └── status.ts    # getServiceState/formatStatus
+├── agents/          # Agent support
+│   ├── registry.ts  # AGENT_REGISTRY (7 agents) + AgentRecord interface
+│   ├── detector.ts  # detectOne/detectAll — PATH, VS Code extension, JetBrains scan
+│   ├── models.ts    # DEFAULT_MODEL_MAP + resolveModel() alias mapping
+│   └── config.ts    # configureAgent/unconfigureAgent + per-agent writers
+├── tui/             # Terminal UI
+│   ├── input.ts     # Raw-mode input + Key enum
+│   └── render.ts    # ANSI renderer — renderFull/renderDirty/buildTUIState
 ├── auth/            # Authentication modules
 │   ├── copilot.ts   # GitHub Copilot OAuth flow
 │   └── mod.ts       # Authentication exports
 ├── copilot/         # GitHub Copilot API integration
-│   ├── client.ts    # API client implementation
-│   ├── models.ts    # Data models
+│   ├── client.ts    # API client + fetchWithRetry (429 exponential backoff)
+│   ├── models.ts    # Model ID resolution + fetchModelList()
 │   ├── token.ts     # Token management
 │   ├── types.ts     # Type definitions
 │   └── mod.ts       # Module exports
+├── config/          # Configuration persistence
+│   └── store.ts     # loadConfig/saveConfig, DEFAULT_CONFIG, ~/.coco/config.json
 ├── lib/             # Shared utilities
 │   ├── errors.ts    # Error handling utilities
+│   ├── log.ts       # Structured JSON logger → ~/.coco/coco.log
+│   ├── process.ts   # findBinary(name), isProcessAlive(pid)
 │   └── token.ts     # Token utilities
-└── version.ts       # Version information
+└── version.ts       # VERSION = "0.2.0"
 
 tests/
 ├── contract/        # Contract tests for external interfaces
+│   ├── cli_test.ts            # coco start/stop output strings
+│   ├── cli_interface_test.ts  # full CLI contract
+│   ├── openai-proxy_test.ts   # /v1/chat/completions, /v1/models
+│   ├── model-translation_test.ts  # alias resolution
+│   ├── proxy_test.ts          # /v1/messages (Anthropic)
+│   └── server_test.ts         # /health endpoint
 ├── integration/     # Integration tests
-└── unit/           # Unit tests
-
-scripts/
-└── docs/           # Documentation automation scripts
-
-.github/
-└── workflows/      # GitHub Actions CI/CD
+│   ├── daemon_test.ts         # lifecycle (ignored pending binary)
+│   └── agent-config_test.ts   # configure/unconfigure round-trip
+└── unit/            # Unit tests
+    ├── config-store_test.ts
+    ├── detector_test.ts
+    ├── model-map_test.ts
+    └── openai-translate_test.ts
 ```
 
 ## Contribution Workflow
@@ -79,39 +100,23 @@ scripts/
 
 ### Development Process
 1. **Write failing tests first** (TDD approach) in appropriate test directory
-2. **Implement feature** following the code style guidelines above
+2. **Implement feature** following the code style guidelines below
 3. **Update documentation** if API or behavior changes
 4. **Run quality gates** before committing: `deno task quality`
 5. **Commit with clear message** following conventional commit format
 
 ### Quality Requirements
-- ✅ **All tests pass** - `deno test`
+- ✅ **All tests pass** - `deno test --allow-all`
 - ✅ **Linting passes** - `deno lint`
 - ✅ **Formatting correct** - `deno fmt --check`
-- ✅ **Type checking passes** - `deno check`
+- ✅ **Type checking passes** - `deno check src/**/*.ts tests/**/*.ts`
 - ✅ **Documentation updated** if needed
-- ✅ **Constitutional compliance** verified
-
-### Pull Request Process
-1. **Create PR** with clear title and description
-2. **Link to issue** if addressing existing issue
-3. **Add tests** that demonstrate the fix/feature
-4. **Update CHANGELOG** if user-facing changes
-5. **Request review** from maintainers
-6. **Address feedback** and update as needed
 
 ### Testing Strategy
 - **Contract tests** - Test external interfaces and API contracts
-- **Integration tests** - Test component interactions
-- **Unit tests** - Test individual functions and modules
-- **Manual testing** - Verify user experience for CLI changes
-
-### Review Criteria
-- ✅ **Constitutional alignment** - Follows project principles
-- ✅ **Code quality** - Readable, maintainable, well-tested
-- ✅ **Performance** - No unnecessary performance degradation
-- ✅ **Security** - No security vulnerabilities introduced
-- ✅ **Documentation** - Clear and up-to-date
+- **Integration tests** - Test component interactions (file I/O, agent config round-trips)
+- **Unit tests** - Test individual functions and modules (detector, translate, model-map)
+- **Manual testing** - Verify TUI and daemon behavior
 
 ## Code Style Guidelines
 
@@ -120,125 +125,67 @@ scripts/
 - **Explicit types** - Prefer explicit type annotations over inference where clarity helps
 - **Interface over type** - Use interfaces for object shapes, types for unions/primitives
 - **Const assertions** - Use `as const` for immutable data structures
+- **verbatim-module-syntax** - Use `import type { Foo }` when importing type-only symbols
 
 ### Naming Conventions
-- **Files**: kebab-case (e.g., `validate-request.ts`)
-- **Directories**: kebab-case (e.g., `auth/`, `server/`)
+- **Files**: kebab-case (e.g., `openai-translate.ts`)
+- **Directories**: kebab-case (e.g., `agents/`, `service/`)
 - **Classes**: PascalCase (e.g., `CopilotClient`)
-- **Functions/variables**: camelCase (e.g., `validateRequest`)
-- **Constants**: SCREAMING_SNAKE_CASE (e.g., `MAX_RETRIES`)
-- **Interfaces**: PascalCase with descriptive names (e.g., `AuthenticationResult`)
+- **Functions/variables**: camelCase (e.g., `resolveModel`)
+- **Constants**: SCREAMING_SNAKE_CASE (e.g., `DEFAULT_MODEL_MAP`)
+- **Interfaces**: PascalCase (e.g., `DetectionResult`)
 
 ### Code Organization
 - **Single responsibility** - Each module/function has one clear purpose
 - **Dependency injection** - Prefer explicit dependencies over global state
-- **Error handling** - Use Result types or explicit error handling, avoid throwing
+- **Error handling** - Avoid throwing; prefer Result types or explicit error handling
 - **Immutability** - Prefer immutable data structures and pure functions
 - **Modular exports** - Use `mod.ts` files for clean module boundaries
 
 ### Deno-Specific Practices
 - **Import maps** - Use import maps in `deno.json` for path management
-- **Permissions** - Explicit permissions in scripts, minimal required permissions
-- **Standard library** - Prefer Deno std library over third-party packages
 - **Web standards** - Use web platform APIs when available
-- **URL imports** - Pin versions for external dependencies
-
-### Documentation Standards
-- **JSDoc comments** - Document public APIs and complex logic
-- **README updates** - Keep documentation current with code changes
-- **Type documentation** - Document complex type relationships
-- **Example usage** - Include examples for public APIs
+- **Standard library** - Prefer Deno std library (`@std/yaml`, `@std/toml`, `@std/path`)
 
 ## Development Commands
 
 ### Core Development
 ```bash
-# Start development server with file watching
-deno task dev
-
-# Run the CLI in development mode
-deno run -A src/cli/main.ts [args...]
-
-# Type check all source files
-deno check src/**/*.ts tests/**/*.ts
+deno task dev                   # Start development server with file watching
+deno run -A src/cli/main.ts start   # Start daemon in dev mode
 ```
 
 ### Quality Assurance
 ```bash
-# Run all quality checks (recommended before commit)
-deno task quality
-
-# Individual quality commands
-deno lint                    # Lint all TypeScript files
-deno fmt                     # Format all files
-deno fmt --check            # Check formatting without modifying
-deno check src/**/*.ts      # Type check source files
+deno task quality               # Full quality gate (lint + fmt + check + test)
+deno lint                       # Lint all TypeScript files
+deno fmt --check                # Check formatting
+deno check src/**/*.ts tests/**/*.ts  # Type check
 ```
 
 ### Testing
 ```bash
-# Run all tests
-deno test --allow-all
-
-# Run specific test types
-deno test tests/unit/       # Unit tests only
-deno test tests/contract/   # Contract tests only
-deno test tests/integration/ # Integration tests only
-
-# Run tests with coverage
-deno test --coverage=coverage --allow-all
-deno coverage coverage      # Generate coverage report
+deno test --allow-all           # Run all tests
+deno test tests/unit/           # Unit tests only
+deno test tests/contract/       # Contract tests only
+deno test tests/integration/    # Integration tests only
 ```
 
-### Building and Distribution
+### Building
 ```bash
-# Compile native binary for current platform
-deno task compile
-
-# Sync version across all distribution artifacts
-deno task sync-version
-
-# Build for multiple platforms (if configured)
-deno task build-all
-```
-
-### Utilities
-```bash
-# Check for outdated dependencies
-deno cache --reload src/cli/main.ts
-
-# Generate import map
-deno info src/cli/main.ts
-
-# Bundle for analysis
-deno bundle src/cli/main.ts bundle.js
-```
-
-### Documentation
-```bash
-# Validate documentation
-deno run -A scripts/docs/validate.ts README.md AGENTS.md
-
-# Generate API documentation
-deno doc src/mod.ts
-
-# Apply progressive disclosure to markdown
-deno run -A scripts/docs/generate-disclosure.ts README.md
+deno task compile               # Compile native binary → bin/coco
+deno task sync-version          # Sync version across all artifacts
 ```
 
 ## Recent Changes
 
-- **2026-03-08**: Enhanced AGENTS.md with comprehensive development guidelines
-  - Added detailed project structure documentation
-  - Updated technology stack with current dependencies
-  - Added code style guidelines and naming conventions
-  - Documented contribution workflow and testing strategy
-  - Added comprehensive development command reference
+- **2026-03-10**: Coco v0.2.0 — full migration from Claudio
+  - Added background daemon service (start/stop/restart/status)
+  - Added OpenAI-compatible proxy endpoint (/v1/chat/completions, /v1/models)
+  - Added agent detection engine (PATH + VS Code + JetBrains)
+  - Added per-agent config writers (7 agents, backup/restore)
+  - Added minimal TUI (Space/Enter/q, ANSI renderer)
+  - Added `coco models`, `coco doctor`, `coco configure`, `coco unconfigure`
+  - Removed Claudio-specific launch/session modules
 
-- **Previous changes**: Auto-generated from feature plans
-  - 003-anthropic-proxy: Added Deno + TypeScript + GitHub Copilot SDK
-  - 002-secure-token-storage: Added secure token handling
-  - 001-copilot-auth: Added GitHub Copilot authentication integration
-
-<!-- MANUAL ADDITIONS START -->
-<!-- MANUAL ADDITIONS END -->
+- **Previous**: Claudio v0.1.x — Claude Code + GitHub Copilot bridge
