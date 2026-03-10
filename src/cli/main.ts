@@ -2,6 +2,12 @@ import { authenticate, getStoredToken, isTokenValid } from "./auth.ts";
 import { VERSION } from "../version.ts";
 import { startDaemon, stopDaemon } from "../service/daemon.ts";
 import { formatStatus, getServiceState } from "../service/status.ts";
+import {
+  installService,
+  isServiceInstalled,
+  uninstallService,
+  UnsupportedPlatformError,
+} from "../service/autostart.ts";
 import { detectAll } from "../agents/detector.ts";
 import { loadConfig } from "../config/store.ts";
 import {
@@ -29,6 +35,8 @@ Commands:
   unconfigure <agent> Revert agent configuration
   doctor              Scan and report all agent states
   models              List available Copilot model IDs
+  install-service     Register daemon with OS login service manager
+  uninstall-service   Remove daemon from OS login service manager
 
 Options:
   --help, -h          Show this help message
@@ -200,6 +208,55 @@ async function cmdDoctor(): Promise<void> {
   console.log(`Last 5 errors: ${lastErrors}`);
 }
 
+async function cmdInstallService(): Promise<void> {
+  try {
+    const result = await installService();
+    if (result.installed) {
+      console.log("Coco service installed.");
+      console.log(`  Config: ${result.configPath}`);
+      console.log(`  Binary: ${result.binaryPath}`);
+      const config = await loadConfig();
+      console.log(`Coco is running on http://localhost:${config.port}`);
+    } else {
+      console.log("Coco service is already installed.");
+    }
+  } catch (err) {
+    if (err instanceof UnsupportedPlatformError) {
+      console.log(err.message);
+      Deno.exit(0);
+    }
+    const message = err instanceof Error ? err.message : String(err);
+    console.error(`Error: ${message}`);
+    Deno.exit(1);
+  }
+}
+
+async function cmdUninstallService(): Promise<void> {
+  try {
+    const installed = await isServiceInstalled();
+    if (!installed) {
+      console.log("Coco service is not installed.");
+      Deno.exit(0);
+    }
+    const result = await uninstallService();
+    if (result.removed) {
+      console.log(
+        "Coco service removed. The daemon will not start on next login.",
+      );
+    } else {
+      console.log("Coco service is not installed.");
+    }
+  } catch (err) {
+    if (err instanceof UnsupportedPlatformError) {
+      console.log(err.message);
+      Deno.exit(0);
+    }
+    const message = err instanceof Error ? err.message : String(err);
+    console.error(`Error: ${message}`);
+    Deno.exit(1);
+  }
+}
+
 async function cmdModels(): Promise<void> {
   const authenticated = await ensureAuthenticated();
   if (!authenticated) Deno.exit(1);
@@ -361,6 +418,12 @@ async function main() {
       break;
     case "models":
       await cmdModels();
+      break;
+    case "install-service":
+      await cmdInstallService();
+      break;
+    case "uninstall-service":
+      await cmdUninstallService();
       break;
     default:
       // T038: non-TTY bare invocation → print status and exit 0

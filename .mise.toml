@@ -4,3 +4,7 @@
 [settings]
 # claudio is installed via GitHub Releases binary
 # See: https://github.com/myty/claudio/releases
+
+[tasks.install]
+description = "Install coco globally via deno"
+run = "deno install --global --allow-all -n coco --force src/cli/main.ts"

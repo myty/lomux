@@ -18,6 +18,7 @@
     "@std/yaml": "jsr:@std/yaml@^1.0.12"
   },
   "tasks": {
+    "install": "deno install --global --allow-all -n coco --force src/cli/main.ts",
     "dev": "deno run -A src/cli/main.ts",
     "test": "deno test --allow-all",
     "lint": "deno lint",

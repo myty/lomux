@@ -34,9 +34,35 @@ Coding agent → coco proxy (127.0.0.1:11434) → GitHub Copilot API
 
 ## Installation
 
-### npm (Recommended)
+### From Source (Development / Try It Out)
 
-**Node.js ≥18 required, no Deno installation needed**
+Clone the repository and install globally with a single command:
+
+```bash
+git clone https://github.com/myty/coco.git && cd coco
+```
+
+**With Deno:**
+```bash
+deno task install
+```
+
+**With mise:**
+```bash
+mise run install
+```
+
+After installation, `coco` is available in any terminal:
+```bash
+coco --version
+# Coco v0.2.0
+```
+
+> **Note**: Ensure `~/.deno/bin` is in your `PATH`. The Deno installer adds this automatically.
+
+### npm (No Deno Required)
+
+**Node.js ≥18 required**
 
 ```bash
 npm install -g coco
@@ -105,14 +131,25 @@ Keys: **Space** toggles selection, **Enter** applies, **↑/↓** moves cursor, 
 | `coco unconfigure <agent>` | Revert config for a specific agent |
 | `coco doctor` | Scan and report all agents' states |
 | `coco models` | List available Copilot model IDs |
+| `coco install-service` | Register daemon with OS login service manager |
+| `coco uninstall-service` | Remove daemon from OS login service manager |
 | `coco --help` | Show help |
 | `coco --version` | Show version |
 
 ### Quick Start
 
 ```bash
-# 1. Start the proxy
+# 1. Install coco globally (from repo root)
+deno task install
+
+# 2. Start the proxy (authenticates with GitHub Copilot on first run)
 coco start
+
+# 3. Configure an agent
+coco configure claude-code
+
+# 4. (Optional) Register as a login service — starts automatically after reboot
+coco install-service
 # → Coco is running on http://localhost:11434
 
 # 2. Configure Claude Code
@@ -122,8 +159,13 @@ coco configure claude-code
 # 3. Check what's running
 coco doctor
 
-# 4. Stop the proxy
-coco stop
+# → coco install-service → Coco service installed.
+
+# 5. Check what's running
+coco doctor
+
+# To remove the service:
+# coco uninstall-service
 ```
 
 ### Supported Agents
