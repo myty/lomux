@@ -1,14 +1,10 @@
 import { authenticate, getStoredToken, isTokenValid } from "./auth.ts";
 import { VERSION } from "../version.ts";
-import { startDaemon, stopDaemon } from "../service/daemon.ts";
 import { formatStatus, getServiceState } from "../service/status.ts";
 import {
-  installService,
-  isServiceInstalled,
-  startService,
-  stopService,
-  uninstallService,
-} from "../service/autostart.ts";
+  getDaemonManager,
+  getServiceManager,
+} from "../service/managers/mod.ts";
 import { detectAll } from "../agents/detector.ts";
 import { loadConfig, saveConfig } from "../config/store.ts";
 import {
@@ -74,13 +70,15 @@ export async function ensureAuthenticated(): Promise<boolean> {
 async function cmdStart(): Promise<void> {
   const authenticated = await ensureAuthenticated();
   if (!authenticated) Deno.exit(1);
-  const serviceInstalled = await isServiceInstalled();
+  const svc = getServiceManager();
+  const dm = getDaemonManager();
+  const serviceInstalled = await svc.isInstalled();
   if (serviceInstalled) {
-    await startService();
+    await svc.start();
     const config = await loadConfig();
     console.log(`Coco is running on http://localhost:${config.port}`);
   } else {
-    const result = await startDaemon();
+    const result = await dm.start();
     if (result.already) {
       console.log(`Coco is already running on http://localhost:${result.port}`);
     } else {
@@ -90,12 +88,14 @@ async function cmdStart(): Promise<void> {
 }
 
 async function cmdStop(): Promise<void> {
-  const serviceInstalled = await isServiceInstalled();
+  const svc = getServiceManager();
+  const dm = getDaemonManager();
+  const serviceInstalled = await svc.isInstalled();
   if (serviceInstalled) {
-    await stopService();
+    await svc.stop();
     console.log("Coco stopped.");
   } else {
-    const stopped = await stopDaemon();
+    const stopped = await dm.stop();
     if (stopped) {
       console.log("Coco stopped.");
     } else {
@@ -105,11 +105,11 @@ async function cmdStop(): Promise<void> {
 }
 
 async function cmdRestart(): Promise<void> {
-  const stopped = await stopDaemon();
+  const stopped = await getDaemonManager().stop();
   if (stopped) console.log("Coco stopped.");
   const authenticated = await ensureAuthenticated();
   if (!authenticated) Deno.exit(1);
-  const result = await startDaemon();
+  const result = await getDaemonManager().start();
   console.log(`Coco is running on http://localhost:${result.port}`);
 }
 
@@ -256,11 +256,11 @@ async function cmdDoctor(): Promise<void> {
 }
 
 async function cmdInstallService(): Promise<void> {
-  // Spec §3.4: stop any running daemon before installing system service
-  await stopDaemon();
+  // Stop any running daemon before installing system service
+  await getDaemonManager().stop();
 
   try {
-    const result = await installService();
+    const result = await getServiceManager().install();
     if (result.installed) {
       console.log("Coco service installed.");
       console.log(`  Config: ${result.configPath}`);
@@ -279,12 +279,13 @@ async function cmdInstallService(): Promise<void> {
 
 async function cmdUninstallService(): Promise<void> {
   try {
-    const installed = await isServiceInstalled();
+    const svc = getServiceManager();
+    const installed = await svc.isInstalled();
     if (!installed) {
       console.log("Coco service is not installed.");
       Deno.exit(0);
     }
-    const result = await uninstallService();
+    const result = await svc.uninstall();
     if (result.removed) {
       console.log(
         "Coco service removed. The daemon will not start on next login.",

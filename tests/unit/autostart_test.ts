@@ -1,5 +1,5 @@
 /**
- * Unit tests for src/service/autostart.ts
+ * Unit tests for service managers (platform-specific install/uninstall logic).
  *
  * Uses dryRun mode and temp directories to verify config file generation
  * without writing to the OS or running launchctl/systemctl.
@@ -7,11 +7,9 @@
 
 import { assertEquals, assertStringIncludes } from "@std/assert";
 import {
-  installService,
-  isServiceInstalled,
-  uninstallService,
+  getServiceManager,
   UnsupportedPlatformError,
-} from "../../src/service/autostart.ts";
+} from "../../src/service/managers/mod.ts";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -39,7 +37,9 @@ Deno.test({
   async fn() {
     const home = await makeTempHome();
     try {
-      const result = await installService({ dryRun: true, home });
+      const result = await getServiceManager({ home }).install({
+        dryRun: true,
+      });
       assertStringIncludes(result.configContent, "com.coco");
       assertStringIncludes(result.configContent, "--daemon");
       assertStringIncludes(result.configContent, "RunAtLoad");
@@ -67,7 +67,9 @@ Deno.test({
   async fn() {
     const home = await makeTempHome();
     try {
-      const result = await installService({ dryRun: true, home });
+      const result = await getServiceManager({ home }).install({
+        dryRun: true,
+      });
       assertStringIncludes(result.configPath, "Library/LaunchAgents");
       assertStringIncludes(result.configPath, "com.coco.plist");
     } catch (err) {
@@ -89,7 +91,9 @@ Deno.test({
   async fn() {
     const home = await makeTempHome();
     try {
-      const result = await installService({ dryRun: true, home });
+      const result = await getServiceManager({ home }).install({
+        dryRun: true,
+      });
       let exists = false;
       try {
         await Deno.stat(result.configPath);
@@ -121,7 +125,9 @@ Deno.test({
   async fn() {
     const home = await makeTempHome();
     try {
-      const result = await installService({ dryRun: true, home });
+      const result = await getServiceManager({ home }).install({
+        dryRun: true,
+      });
       assertStringIncludes(result.configContent, "[Unit]");
       assertStringIncludes(result.configContent, "[Service]");
       assertStringIncludes(result.configContent, "[Install]");
@@ -153,7 +159,9 @@ Deno.test({
   async fn() {
     const home = await makeTempHome();
     try {
-      const result = await installService({ dryRun: true, home });
+      const result = await getServiceManager({ home }).install({
+        dryRun: true,
+      });
       assertStringIncludes(result.configPath, ".config/systemd/user");
       assertStringIncludes(result.configPath, "coco.service");
     } catch (err) {
@@ -181,7 +189,7 @@ Deno.test({
   async fn() {
     const home = await makeTempHome();
     try {
-      const installed = await isServiceInstalled({ home });
+      const installed = await getServiceManager({ home }).isInstalled();
       assertEquals(installed, false);
     } finally {
       await cleanup(home);
@@ -198,7 +206,7 @@ Deno.test({
     await Deno.mkdir(plistDir, { recursive: true });
     await Deno.writeTextFile(`${plistDir}/com.coco.plist`, "<plist/>");
     try {
-      const installed = await isServiceInstalled({ home });
+      const installed = await getServiceManager({ home }).isInstalled();
       assertEquals(installed, true);
     } finally {
       await cleanup(home);
@@ -215,7 +223,7 @@ Deno.test({
     await Deno.mkdir(unitDir, { recursive: true });
     await Deno.writeTextFile(`${unitDir}/coco.service`, "[Unit]");
     try {
-      const installed = await isServiceInstalled({ home });
+      const installed = await getServiceManager({ home }).isInstalled();
       assertEquals(installed, true);
     } finally {
       await cleanup(home);
@@ -234,7 +242,9 @@ Deno.test({
     const home = await makeTempHome();
     try {
       // No plist/unit file exists — should return removed: false
-      const result = await uninstallService({ dryRun: true, home });
+      const result = await getServiceManager({ home }).uninstall({
+        dryRun: true,
+      });
       assertEquals(result.removed, false);
     } catch (err) {
       if (err instanceof UnsupportedPlatformError) return;
@@ -255,7 +265,9 @@ Deno.test({
     await Deno.mkdir(plistDir, { recursive: true });
     await Deno.writeTextFile(`${plistDir}/com.coco.plist`, "<plist/>");
     try {
-      const result = await uninstallService({ dryRun: true, home });
+      const result = await getServiceManager({ home }).uninstall({
+        dryRun: true,
+      });
       assertEquals(result.removed, true);
       // dryRun should NOT actually remove the file
       const stillExists = await Deno.stat(`${plistDir}/com.coco.plist`).then(

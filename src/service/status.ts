@@ -1,7 +1,6 @@
 import { loadConfig } from "../config/store.ts";
-import { getDaemonPid } from "./daemon.ts";
 import { getStoredToken, isTokenValid } from "../cli/auth.ts";
-import { isServiceInstalled, isServiceRunning } from "./autostart.ts";
+import { getDaemonManager, getServiceManager } from "./managers/mod.ts";
 
 export interface ServiceState {
   running: boolean;
@@ -20,9 +19,12 @@ export interface ServiceState {
  * 5. Checking stored token validity
  */
 export async function getServiceState(): Promise<ServiceState> {
+  const serviceManager = getServiceManager();
+  const daemonManager = getDaemonManager();
+
   const [serviceInstalled, pid, config, token] = await Promise.all([
-    isServiceInstalled().catch(() => false),
-    getDaemonPid(),
+    serviceManager.isInstalled().catch(() => false),
+    daemonManager.getPid(),
     loadConfig().catch(() => null),
     getStoredToken().catch(() => null),
   ]);
@@ -37,7 +39,7 @@ export async function getServiceState(): Promise<ServiceState> {
   }
 
   if (serviceInstalled) {
-    const running = await isServiceRunning().catch(() => false);
+    const running = await serviceManager.isRunning().catch(() => false);
     return { running, serviceInstalled, pid: null, port, authStatus };
   }
 
