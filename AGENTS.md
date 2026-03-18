@@ -170,8 +170,11 @@ tests/
 
 ### Specification Workflow
 
-- **LeanSpec-first** - All feature specifications live under `specs/` as
-  single-file `README.md` documents
+- **LeanSpec-first** - All feature specifications live under `specs/`, with
+  each spec `README.md` serving as the canonical entrypoint. Some historical or
+  expanded specs also retain supporting artifacts such as `PLAN.md`,
+  `TASKS.md`, `CONTRACTS.md`, or `DATA_MODEL.md`; see `specs/README.md` for
+  the repository's current spec model
 - **Global conventions** - Use `CONVENTIONS.md` as the project-wide constitution
   and governance baseline
 
@@ -222,8 +225,8 @@ deno task sync-version          # Sync version across all artifacts
 ## Recent Changes
 
 - **2026-03-15**: LeanSpec migration completed
-  - Migrated Speckit multi-file specs to LeanSpec single-file `README.md` format
-    in `specs/`
+  - Migrated Speckit specs to a LeanSpec `README.md`-first format in `specs/`,
+    while retaining supporting artifacts where they still add value
   - Added root `CONVENTIONS.md` as the canonical global conventions file
   - Adopted LeanSpec workflow commands (`new`, `plan`, `validate`, `backfill`,
     `board`)

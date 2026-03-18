@@ -102,6 +102,9 @@ OpenAI) and GitHub Copilot's HTTP interface MUST be explicit, documented, and
 spec-driven. No hidden behavior, silent fallbacks, or undocumented mutations.
 Every transformation MUST be reviewable in source and traceable to a contract in
 `specs/*/CONTRACTS.md`. Model alias resolution MUST be logged at `debug` level.
+Specifications under `specs/` are README-first: each spec directory's
+`README.md` is the canonical entrypoint, while any supporting artifacts remain
+optional supporting context rather than separate authorities.
 
 ### VII. Self-Containment
 

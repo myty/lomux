@@ -20,7 +20,8 @@ lean-spec validate
 
 ## Structure
 
-Each spec lives in a numbered directory with a `README.md` file:
+Each spec lives in a numbered directory with a `README.md` file. That README is
+the canonical LeanSpec entrypoint for the spec:
 
 ```
 ├── 001-feature-name/
@@ -28,6 +29,14 @@ Each spec lives in a numbered directory with a `README.md` file:
 └── 002-another-feature/
     └── README.md
 ```
+
+Some specs also keep supporting artifacts such as `PLAN.md`, `TASKS.md`,
+`CONTRACTS.md`, `RESEARCH.md`, `DATA_MODEL.md`, `QUICKSTART.md`,
+`CHECKLISTS.md`, or `SPECIFICATION.md`. These files provide additional planning
+or historical context, but the spec README remains the primary place to start.
+
+Spec status is defined by LeanSpec metadata and workflow, not by the presence
+or count of supporting files.
 
 ## Spec Status Values
 
