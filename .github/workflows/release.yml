@@ -10,7 +10,7 @@ jobs:
     name: Quality
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - uses: denoland/setup-deno@v2
         with:
           deno-version: v2.x
@@ -45,11 +45,11 @@ jobs:
             target: x86_64-pc-windows-msvc
             artifact: claudio-windows-x64.exe
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - uses: denoland/setup-deno@v2
         with:
           deno-version: v2.x
-      - uses: actions/cache@v4
+      - uses: actions/cache@v5
         with:
           path: ~/.deno
           key: deno-${{ runner.os }}-${{ hashFiles('deno.lock') }}
@@ -62,7 +62,7 @@ jobs:
           --target ${{ matrix.target }}
           --output ${{ matrix.artifact }}
           src/cli/main.ts
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: ${{ matrix.artifact }}
           path: ${{ matrix.artifact }}
@@ -75,8 +75,8 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/download-artifact@v4
+      - uses: actions/checkout@v6
+      - uses: actions/download-artifact@v8
         with:
           pattern: claudio-*
           merge-multiple: true
@@ -129,7 +129,7 @@ jobs:
       contents: read
       id-token: write
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - uses: denoland/setup-deno@v2
         with:
           deno-version: v2.x
@@ -147,8 +147,8 @@ jobs:
     # Settings → Secrets and variables → Actions → New repository secret
     # Name: NPM_TOKEN, Value: your npm access token with publish permissions
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
         with:
           node-version: "20"
           registry-url: https://registry.npmjs.org
