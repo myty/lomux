@@ -19,6 +19,7 @@ import {
   openAIErrorResponse,
 } from "./response-utils.ts";
 import type { OpenAIChatRequest, ProxyRequest } from "./types.ts";
+import { loadConfig } from "../config/store.ts";
 
 export async function handleChatCompletions(req: Request): Promise<Response> {
   const bodyOrResponse = await parseOpenAIRequestBody(req);
@@ -54,29 +55,67 @@ export async function handleChatCompletions(req: Request): Promise<Response> {
   };
 
   if (anthropicReq.stream) {
+    const config = await loadConfig();
     const state = makeStreamState(resolvedModel);
+
     const stream = new ReadableStream({
       async start(controller) {
         const encoder = new TextEncoder();
+        let backpressureCount = 0;
+        let isClosed = false;
+
+        const queueChunk = async (data: string): Promise<void> => {
+          if (isClosed) return;
+
+          try {
+            controller.enqueue(encoder.encode(data));
+          } catch (err) {
+            if (err instanceof TypeError && err.message.includes('full')) {
+              backpressureCount++;
+              // Implement exponential backoff for backpressure
+              const delay = Math.min(100 * backpressureCount, 1000);
+              await new Promise(resolve => setTimeout(resolve, delay));
+
+              if (!isClosed) {
+                // Retry the enqueue
+                controller.enqueue(encoder.encode(data));
+              }
+            } else if (err instanceof TypeError && err.message.includes('close')) {
+              // Stream is already closed, ignore
+              isClosed = true;
+            } else {
+              throw err;
+            }
+          }
+        };
+
         try {
-          await chatStream(anthropicReq, (event) => {
+          await chatStream(anthropicReq, async (event) => {
             const line = anthropicStreamEventToOpenAI(event, state);
-            if (line) controller.enqueue(encoder.encode(line));
+            if (line) await queueChunk(line);
           });
-          controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+
+          if (!isClosed) {
+            await queueChunk("data: [DONE]\n\n");
+          }
         } catch (err) {
-          const errorBody = openAIErrorBody(
-            err instanceof Error ? err.message : "Service unavailable",
-            "api_error",
-            "service_unavailable",
-          );
-          controller.enqueue(
-            encoder.encode(`data: ${JSON.stringify(errorBody)}\n\n`),
-          );
+          if (!isClosed) {
+            const errorBody = openAIErrorBody(
+              err instanceof Error ? err.message : "Service unavailable",
+              "api_error",
+              "service_unavailable",
+            );
+            await queueChunk(`data: ${JSON.stringify(errorBody)}\n\n`);
+          }
         } finally {
-          controller.close();
+          if (!isClosed) {
+            isClosed = true;
+            controller.close();
+          }
         }
       },
+    }, {
+      highWaterMark: config.streaming.highWaterMark,
     });
 
     return new Response(stream, {

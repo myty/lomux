@@ -6,9 +6,13 @@
  */
 export const DEFAULT_MODEL_MAP: Record<string, string> = {
   // Anthropic aliases
+  "claude-opus-4-6": "claude-opus-4-6",
+  "claude-sonnet-4-6": "claude-sonnet-4-6",
   "claude-opus-4-5": "claude-opus-4-5",
   "claude-sonnet-4-5": "claude-sonnet-4-5",
   "claude-haiku-4-5": "claude-haiku-4-5",
+  // Dated Anthropic model variants — map to their base model ID
+  "claude-haiku-4-5-20251001": "claude-haiku-4-5",
   "claude-3-5-sonnet": "claude-3.5-sonnet",
   "claude-3-opus": "claude-3-opus",
   "claude-3-haiku": "claude-3-haiku",

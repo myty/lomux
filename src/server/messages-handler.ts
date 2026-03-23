@@ -13,6 +13,7 @@ import {
 import { toStreamEvent } from "./transform.ts";
 import type { Message, ProxyRequest } from "./types.ts";
 import { validateRequest } from "./types.ts";
+import { loadConfig } from "../config/store.ts";
 
 export async function handleMessages(req: Request): Promise<Response> {
   const body = await readJsonBody(req);
@@ -38,33 +39,68 @@ export async function handleMessages(req: Request): Promise<Response> {
   const request = body as ProxyRequest;
 
   if (request.stream) {
+    const config = await loadConfig();
+
     const stream = new ReadableStream({
       async start(controller) {
         const encoder = new TextEncoder();
+        let backpressureCount = 0;
+        let isClosed = false;
+
+        const queueChunk = async (data: string): Promise<void> => {
+          if (isClosed) return;
+
+          try {
+            controller.enqueue(encoder.encode(data));
+          } catch (err) {
+            if (err instanceof TypeError && err.message.includes('full')) {
+              backpressureCount++;
+              // Implement exponential backoff for backpressure
+              const delay = Math.min(100 * backpressureCount, 1000);
+              await new Promise(resolve => setTimeout(resolve, delay));
+
+              if (!isClosed) {
+                // Retry the enqueue
+                controller.enqueue(encoder.encode(data));
+              }
+            } else if (err instanceof TypeError && err.message.includes('close')) {
+              // Stream is already closed, ignore
+              isClosed = true;
+            } else {
+              throw err;
+            }
+          }
+        };
+
         try {
-          await chatStream(request, (event) => {
-            controller.enqueue(encoder.encode(toStreamEvent(event)));
+          await chatStream(request, async (event) => {
+            await queueChunk(toStreamEvent(event));
           });
         } catch (err) {
-          const errorEvent = {
-            type: "error" as const,
-            error: {
-              type: "service_error",
-              message: err instanceof Error
-                ? err.message
-                : "Internal server error",
-              param: null,
-            },
-          };
-          controller.enqueue(
-            encoder.encode(
+          if (!isClosed) {
+            const errorEvent = {
+              type: "error" as const,
+              error: {
+                type: "service_error",
+                message: err instanceof Error
+                  ? err.message
+                  : "Internal server error",
+                param: null,
+              },
+            };
+            await queueChunk(
               `event: error\ndata: ${JSON.stringify(errorEvent)}\n\n`,
-            ),
-          );
+            );
+          }
         } finally {
-          controller.close();
+          if (!isClosed) {
+            isClosed = true;
+            controller.close();
+          }
         }
       },
+    }, {
+      highWaterMark: config.streaming.highWaterMark,
     });
 
     return new Response(stream, {

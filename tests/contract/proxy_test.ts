@@ -96,7 +96,7 @@ Deno.test(
       const res = await handleRequest(req);
       assertEquals(res.status, 200);
       assertEquals(res.headers.get("Content-Type"), "text/event-stream");
-      assertEquals(res.headers.get("Cache-Control"), "no-cache");
+      assertEquals(res.headers.get("Cache-Control"), "no-cache, no-store, must-revalidate");
       assertEquals(res.headers.get("Connection"), "keep-alive");
       await res.body?.cancel();
     } finally {

@@ -9,6 +9,7 @@ export async function handleModels(): Promise<Response> {
 
   const advertisedModelIds = [
     ...liveModels,
+    ...Object.keys(DEFAULT_MODEL_MAP),
     ...Object.values(DEFAULT_MODEL_MAP),
   ];
 

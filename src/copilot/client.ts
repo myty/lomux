@@ -23,6 +23,8 @@ import type {
   ToolChoice,
 } from "../server/types.ts";
 import { generateMessageId } from "../server/types.ts";
+import { loadConfig } from "../config/store.ts";
+import { getGlobalDiagnostics } from "../lib/streaming-diagnostics.ts";
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -297,6 +299,159 @@ export async function chat(request: ProxyRequest): Promise<ProxyResponse> {
 }
 
 // ---------------------------------------------------------------------------
+// Enhanced Streaming Processor with Aggressive Flushing
+// ---------------------------------------------------------------------------
+
+/**
+ * Enhanced streaming processor that fixes line-based buffering issues.
+ * Implements timeout-based and size-based flushing for better streaming experience.
+ */
+class StreamingProcessor {
+  private buffer = "";
+  private lastFlushTime = Date.now();
+  private flushTimer?: number;
+  private decoder = new TextDecoder();
+
+  constructor(
+    private config: {
+      flushTimeoutMs: number;
+      maxBufferBytes: number;
+      enableAggressiveFlushing: boolean;
+      enableDiagnostics: boolean;
+    },
+    private onProcessedLine: (line: string) => void,
+    private diagnostics = getGlobalDiagnostics(),
+  ) {}
+
+  /**
+   * Process a chunk of data and emit processed lines
+   */
+  processChunk(value: Uint8Array): void {
+    const chunk = this.decoder.decode(value, { stream: true });
+
+    if (this.config.enableDiagnostics) {
+      this.diagnostics.recordChunk(chunk.length);
+    }
+
+    this.buffer += chunk;
+
+    // Process complete lines immediately
+    const lines = this.buffer.split("\n");
+    const incompleteLine = lines.pop() ?? "";
+
+    // Emit all complete lines
+    for (const line of lines) {
+      this.emitLine(line, false);
+    }
+
+    // Handle incomplete line
+    this.buffer = incompleteLine;
+
+    if (this.config.enableAggressiveFlushing && incompleteLine) {
+      this.scheduleFlush();
+    }
+  }
+
+  /**
+   * Process any remaining buffer content on stream end
+   */
+  finish(): void {
+    this.clearTimer();
+
+    if (this.buffer.trim()) {
+      this.emitLine(this.buffer, true);
+      this.buffer = "";
+    }
+  }
+
+  /**
+   * Clear any pending timer
+   */
+  private clearTimer(): void {
+    if (this.flushTimer) {
+      clearTimeout(this.flushTimer);
+      this.flushTimer = undefined;
+    }
+  }
+
+  /**
+   * Schedule a flush for incomplete lines
+   */
+  private scheduleFlush(): void {
+    this.clearTimer();
+
+    this.flushTimer = setTimeout(() => {
+      this.forceFlush();
+    }, this.config.flushTimeoutMs);
+  }
+
+  /**
+   * Force flush incomplete line based on timeout or buffer size
+   */
+  private forceFlush(): void {
+    if (!this.buffer.trim()) return;
+
+    const bufferSize = new TextEncoder().encode(this.buffer).length;
+    const timeSinceFlush = Date.now() - this.lastFlushTime;
+
+    // Force flush if buffer is too large or too much time has passed
+    if (
+      bufferSize >= this.config.maxBufferBytes ||
+      timeSinceFlush >= this.config.flushTimeoutMs
+    ) {
+      // Try to find a natural break point in the incomplete line
+      const processedLine = this.findNaturalBreakPoint(this.buffer);
+      if (processedLine) {
+        this.emitLine(processedLine, true);
+        this.buffer = this.buffer.slice(processedLine.length);
+      }
+    }
+  }
+
+  /**
+   * Find a natural break point in an incomplete line (e.g., after punctuation)
+   */
+  private findNaturalBreakPoint(line: string): string | null {
+    if (!line.trim()) return null;
+
+    // Look for natural break points
+    const breakPoints = [
+      /^(.*[.!?]\s+)/,  // After sentence endings
+      /^(.*[,;:]\s+)/,  // After clause separators
+      /^(.*\s+)/,       // After any whitespace
+    ];
+
+    for (const pattern of breakPoints) {
+      const match = line.match(pattern);
+      if (match) {
+        return match[1];
+      }
+    }
+
+    // If no natural break point, split at a reasonable position
+    if (line.length > 50) {
+      return line.slice(0, Math.floor(line.length / 2));
+    }
+
+    return null;
+  }
+
+  /**
+   * Emit a processed line
+   */
+  private emitLine(line: string, forced: boolean): void {
+    if (this.config.enableDiagnostics) {
+      const bufferSize = new TextEncoder().encode(this.buffer).length;
+      this.diagnostics.recordFlush(bufferSize, forced);
+    }
+
+    this.lastFlushTime = Date.now();
+    this.onProcessedLine(line);
+    this.clearTimer();
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Streaming chat
 // ---------------------------------------------------------------------------
 
@@ -306,6 +461,7 @@ export async function chatStream(
 ): Promise<void> {
   const copilotToken = await getToken();
   const copilotModel = await resolveModel(request.model);
+  const config = await loadConfig();
 
   const body: OpenAIChatRequest = {
     model: copilotModel,
@@ -378,8 +534,6 @@ export async function chatStream(
   }
 
   const reader = response.body!.getReader();
-  const decoder = new TextDecoder();
-  let buffer = "";
 
   let headerEmitted = false;
   let doneEmitted = false;
@@ -446,106 +600,112 @@ export async function chatStream(
     onChunk({ type: "message_stop" });
   };
 
+  const processLine = (line: string) => {
+    const trimmed = line.trim();
+    if (!trimmed.startsWith("data:")) return;
+
+    const data = trimmed.slice("data:".length).trim();
+
+    if (data === "[DONE]") {
+      emitHeader();
+      emitDone(pendingStopReason ?? "end_turn");
+      return;
+    }
+
+    let chunk: OpenAIStreamChunk;
+    try {
+      chunk = JSON.parse(data) as OpenAIStreamChunk;
+    } catch {
+      return;
+    }
+
+    const choice = chunk.choices[0];
+    // Usage-only chunk (choices is empty, usage is present) — capture actual counts
+    if (!choice) {
+      if (chunk.usage) {
+        actualInputTokens = chunk.usage.prompt_tokens;
+        actualOutputTokens = chunk.usage.completion_tokens;
+      }
+      return;
+    }
+
+    const { delta, finish_reason } = choice;
+
+    // Handle text content
+    if (delta.content) {
+      emitHeader();
+      if (textBlockIndex < 0) {
+        textBlockIndex = nextBlockIndex++;
+        onChunk({
+          type: "content_block_start",
+          index: textBlockIndex,
+          content_block: { type: "text" },
+        });
+      }
+      onChunk({
+        type: "content_block_delta",
+        index: textBlockIndex,
+        delta: { type: "text_delta", text: delta.content },
+      });
+    }
+
+    // Handle tool call deltas
+    if (delta.tool_calls) {
+      emitHeader();
+      for (const tcDelta of delta.tool_calls) {
+        const tcIndex = tcDelta.index;
+
+        if (!toolCallBlocks.has(tcIndex)) {
+          // First chunk for this tool call — start the block
+          const blockIndex = nextBlockIndex++;
+          const id = tcDelta.id ?? `tool_${blockIndex}`;
+          const name = tcDelta.function?.name ?? "";
+          toolCallBlocks.set(tcIndex, { index: blockIndex, id, name });
+          onChunk({
+            type: "content_block_start",
+            index: blockIndex,
+            content_block: { type: "tool_use", id, name, input: {} },
+          });
+        }
+
+        if (tcDelta.function?.arguments) {
+          const blockInfo = toolCallBlocks.get(tcIndex)!;
+          onChunk({
+            type: "content_block_delta",
+            index: blockInfo.index,
+            delta: {
+              type: "input_json_delta",
+              partial_json: tcDelta.function.arguments,
+            },
+          });
+        }
+      }
+    }
+
+    if (finish_reason) {
+      emitHeader();
+      // Defer emitDone — wait for the usage chunk that follows finish_reason
+      pendingStopReason = finishReasonToStopReason(finish_reason);
+    }
+  };
+
+  // Create enhanced streaming processor
+  const processor = new StreamingProcessor(
+    config.streaming,
+    processLine,
+  );
+
   try {
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;
 
-      buffer += decoder.decode(value, { stream: true });
-
-      const lines = buffer.split("\n");
-      buffer = lines.pop() ?? "";
-
-      for (const line of lines) {
-        const trimmed = line.trim();
-        if (!trimmed.startsWith("data:")) continue;
-
-        const data = trimmed.slice("data:".length).trim();
-
-        if (data === "[DONE]") {
-          emitHeader();
-          emitDone(pendingStopReason ?? "end_turn");
-          continue;
-        }
-
-        let chunk: OpenAIStreamChunk;
-        try {
-          chunk = JSON.parse(data) as OpenAIStreamChunk;
-        } catch {
-          continue;
-        }
-
-        const choice = chunk.choices[0];
-        // Usage-only chunk (choices is empty, usage is present) — capture actual counts
-        if (!choice) {
-          if (chunk.usage) {
-            actualInputTokens = chunk.usage.prompt_tokens;
-            actualOutputTokens = chunk.usage.completion_tokens;
-          }
-          continue;
-        }
-
-        const { delta, finish_reason } = choice;
-
-        // Handle text content
-        if (delta.content) {
-          emitHeader();
-          if (textBlockIndex < 0) {
-            textBlockIndex = nextBlockIndex++;
-            onChunk({
-              type: "content_block_start",
-              index: textBlockIndex,
-              content_block: { type: "text" },
-            });
-          }
-          onChunk({
-            type: "content_block_delta",
-            index: textBlockIndex,
-            delta: { type: "text_delta", text: delta.content },
-          });
-        }
-
-        // Handle tool call deltas
-        if (delta.tool_calls) {
-          emitHeader();
-          for (const tcDelta of delta.tool_calls) {
-            const tcIndex = tcDelta.index;
-
-            if (!toolCallBlocks.has(tcIndex)) {
-              // First chunk for this tool call — start the block
-              const blockIndex = nextBlockIndex++;
-              const id = tcDelta.id ?? `tool_${blockIndex}`;
-              const name = tcDelta.function?.name ?? "";
-              toolCallBlocks.set(tcIndex, { index: blockIndex, id, name });
-              onChunk({
-                type: "content_block_start",
-                index: blockIndex,
-                content_block: { type: "tool_use", id, name, input: {} },
-              });
-            }
-
-            if (tcDelta.function?.arguments) {
-              const blockInfo = toolCallBlocks.get(tcIndex)!;
-              onChunk({
-                type: "content_block_delta",
-                index: blockInfo.index,
-                delta: {
-                  type: "input_json_delta",
-                  partial_json: tcDelta.function.arguments,
-                },
-              });
-            }
-          }
-        }
-
-        if (finish_reason) {
-          emitHeader();
-          // Defer emitDone — wait for the usage chunk that follows finish_reason
-          pendingStopReason = finishReasonToStopReason(finish_reason);
-        }
-      }
+      // Use enhanced processor instead of basic line splitting
+      processor.processChunk(value);
     }
   } finally {
+    // Process any remaining buffer content
+    processor.finish();
     reader.releaseLock();
   }
 

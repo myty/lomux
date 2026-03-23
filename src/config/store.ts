@@ -12,6 +12,19 @@ export interface ConfigEntry {
   validatedAt: string | null;
 }
 
+export interface StreamingConfig {
+  /** Timeout in milliseconds to force flush incomplete lines. Default: 50ms. */
+  flushTimeoutMs: number;
+  /** Maximum buffer size in bytes before forcing a flush. Default: 1024 bytes. */
+  maxBufferBytes: number;
+  /** Enable aggressive flushing for better streaming experience. Default: true. */
+  enableAggressiveFlushing: boolean;
+  /** Enable streaming diagnostics collection. Default: false. */
+  enableDiagnostics: boolean;
+  /** ReadableStream high water mark. Default: 16384. */
+  highWaterMark: number;
+}
+
 export interface CocoConfig {
   /** TCP port the proxy listens on. Default: 11434. */
   port: number;
@@ -28,6 +41,8 @@ export interface CocoConfig {
   modelMappingPolicy: ModelMappingPolicy;
   /** ISO timestamp of last successful daemon start. */
   lastStarted: string | null;
+  /** Streaming configuration for response delivery. */
+  streaming: StreamingConfig;
 }
 
 export const DEFAULT_CONFIG: CocoConfig = {
@@ -37,6 +52,13 @@ export const DEFAULT_CONFIG: CocoConfig = {
   agents: [],
   modelMappingPolicy: "compatible",
   lastStarted: null,
+  streaming: {
+    flushTimeoutMs: 50,
+    maxBufferBytes: 1024,
+    enableAggressiveFlushing: true,
+    enableDiagnostics: false,
+    highWaterMark: 16384,
+  },
 };
 
 function homeDir(): string {
@@ -168,6 +190,19 @@ function validate(config: CocoConfig): void {
       );
     }
   }
+
+  // Validate streaming configuration
+  if (config.streaming) {
+    if (config.streaming.flushTimeoutMs < 1 || config.streaming.flushTimeoutMs > 10000) {
+      throw new Error(`Invalid streaming.flushTimeoutMs: ${config.streaming.flushTimeoutMs}. Must be 1-10000ms.`);
+    }
+    if (config.streaming.maxBufferBytes < 64 || config.streaming.maxBufferBytes > 1048576) {
+      throw new Error(`Invalid streaming.maxBufferBytes: ${config.streaming.maxBufferBytes}. Must be 64 bytes - 1MB.`);
+    }
+    if (config.streaming.highWaterMark < 1024 || config.streaming.highWaterMark > 1048576) {
+      throw new Error(`Invalid streaming.highWaterMark: ${config.streaming.highWaterMark}. Must be 1024 bytes - 1MB.`);
+    }
+  }
 }
 
 export async function loadConfig(): Promise<CocoConfig> {
@@ -178,6 +213,11 @@ export async function loadConfig(): Promise<CocoConfig> {
     const config: CocoConfig = applyEnvOverrides({
       ...DEFAULT_CONFIG,
       ...parsed,
+      // Ensure streaming config has defaults if partially specified
+      streaming: {
+        ...DEFAULT_CONFIG.streaming,
+        ...(parsed.streaming || {}),
+      },
     });
     validate(config);
     return config;

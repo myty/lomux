@@ -108,6 +108,13 @@ Deno.test("saveConfig + loadConfig — round-trip", async () => {
       agents: [],
       modelMappingPolicy: "strict",
       lastStarted: "2026-01-01T00:00:00.000Z",
+      streaming: {
+        flushTimeoutMs: 100,
+        maxBufferBytes: 2048,
+        enableAggressiveFlushing: false,
+        enableDiagnostics: true,
+        highWaterMark: 32768,
+      },
     };
     await saveConfig(config);
     const loaded = await loadConfig();
@@ -116,6 +123,8 @@ Deno.test("saveConfig + loadConfig — round-trip", async () => {
     assertEquals(loaded.modelMap, { "claude-3": "claude-3-sonnet" });
     assertEquals(loaded.modelMappingPolicy, "strict");
     assertEquals(loaded.lastStarted, "2026-01-01T00:00:00.000Z");
+    assertEquals(loaded.streaming.flushTimeoutMs, 100);
+    assertEquals(loaded.streaming.enableDiagnostics, true);
   });
 });
 
