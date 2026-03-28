@@ -1,0 +1,46 @@
+/* Modmux Color Palette */
+:root {
+  /* Primary Colors */
+  --color-primary: #1e1f22;
+  --color-primary-light: #2c2d31;
+  --color-primary-dark: #141416;
+
+  /* Accent Colors */
+  --color-accent: #3a7bff;
+  --color-accent-hover: #4d8aff;
+  --color-accent-active: #2d6ae8;
+
+  /* Secondary Colors */
+  --color-secondary: #2c2d31;
+  --color-secondary-light: #3a3b3f;
+  --color-secondary-dark: #1e1f22;
+
+  /* Semantic Colors */
+  --color-success: #4ee1a0;
+  --color-success-bg: rgba(78, 225, 160, 0.1);
+  --color-warning: #f2a93b;
+  --color-warning-bg: rgba(242, 169, 59, 0.1);
+  --color-error: #ff6b6b;
+  --color-error-bg: rgba(255, 107, 107, 0.1);
+
+  /* Text Colors */
+  --color-text-primary: #ffffff;
+  --color-text-secondary: #a0a0a5;
+  --color-text-tertiary: #6b6b70;
+  --color-text-inverse: #1e1f22;
+
+  /* Background Colors */
+  --color-bg-primary: #1e1f22;
+  --color-bg-secondary: #2c2d31;
+  --color-bg-tertiary: #38393d;
+  --color-bg-elevated: #3a3b3f;
+
+  /* Border Colors */
+  --color-border: #3a3b3f;
+  --color-border-light: #48494d;
+  --color-border-subtle: #2c2d31;
+
+  /* Code/Mono Colors */
+  --color-code-bg: #141416;
+  --color-code-border: #2c2d31;
+}

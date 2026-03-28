@@ -13,7 +13,7 @@ Deno.test(
   async () => {
     // Override HOME to a fresh temp dir so no PID file can exist
     const tempHome = await Deno.makeTempDir({
-      prefix: "lomux_daemon_test_",
+      prefix: "coco_daemon_test_",
     });
     const originalHome = Deno.env.get("HOME");
     Deno.env.set("HOME", tempHome);
@@ -36,7 +36,7 @@ Deno.test(
   "DaemonManager.getPid — returns null when no PID file exists",
   async () => {
     const tempHome = await Deno.makeTempDir({
-      prefix: "lomux_daemon_test_",
+      prefix: "coco_daemon_test_",
     });
     const originalHome = Deno.env.get("HOME");
     Deno.env.set("HOME", tempHome);

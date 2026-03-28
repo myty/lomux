@@ -1,9 +1,9 @@
 [tools]
-# ardo is installed via GitHub Releases binary
+# modmux is installed via GitHub Releases binary or deno
 
 [settings]
-# See: https://github.com/ardo-org/ardo/releases
+# See: https://github.com/myty/modmux/releases
 
 [tasks.install]
-description = "Install ardo globally via deno"
-run = "deno install --global --allow-all -n ardo --config deno.json --force src/cli/main.ts"
+description = "Install modmux globally via deno"
+run = "deno install --global --allow-all -n modmux --config deno.json --force cli/src/main.ts"

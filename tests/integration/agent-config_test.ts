@@ -3,7 +3,7 @@
  *
  * These tests use temp directories to avoid touching real config files.
  * The validateConfig() probe tests require a running daemon and are marked
- * ignore: true -- enable them with `lomux start` before running manually.
+ * ignore: true -- enable them with `coco start` before running manually.
  */
 
 import { assertEquals, assertStringIncludes } from "@std/assert";
@@ -14,7 +14,10 @@ import {
   validateConfig,
   verifyAgentConfig,
 } from "../../src/agents/config.ts";
-import { type LomuxConfig, DEFAULT_CONFIG } from "../../src/config/store.ts";
+import {
+  type CocoConfig as LomuxConfig,
+  DEFAULT_CONFIG,
+} from "../../src/config/store.ts";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -24,7 +27,7 @@ async function withTempHome(
   fn: (homeDir: string, configDir: string) => Promise<void>,
 ): Promise<void> {
   const homeDir = await Deno.makeTempDir();
-  const configDir = `${homeDir}/.lomux`;
+  const configDir = `${homeDir}/.coco`;
   await Deno.mkdir(configDir, { recursive: true });
   try {
     await fn(homeDir, configDir);
@@ -33,7 +36,7 @@ async function withTempHome(
   }
 }
 
-/** Create a LomuxConfig backed by a temp dir (avoids touching ~/.lomux). */
+/** Create a CocoConfig backed by a temp dir (avoids touching ~/.coco). */
 function makeTempConfig(_configDir: string): LomuxConfig {
   // We patch saveConfig via the homeDir option — config writes go to configDir
   return { ...DEFAULT_CONFIG };
@@ -59,7 +62,7 @@ Deno.test("configureAgent(codex) — creates config file when none exists", asyn
     assertStringIncludes(content, "model_provider");
     assertStringIncludes(content, "base_url");
     assertStringIncludes(content, "http://127.0.0.1:11434");
-    assertStringIncludes(content, "lomux");
+    assertStringIncludes(content, "coco");
     assertStringIncludes(content, 'wire_api = "responses"');
     assertStringIncludes(content, 'model = "gpt-5.4"');
     assertEquals(content.includes("auth_method"), false);
@@ -79,7 +82,7 @@ Deno.test("configureAgent(codex) — backs up existing file before overwriting",
       skipValidation: true,
     });
 
-    assertEquals(entry.backupPath, `${entry.configPath}.lomux-backup`);
+    assertEquals(entry.backupPath, `${entry.configPath}.coco-backup`);
     const backup = await Deno.readTextFile(entry.backupPath!);
     assertStringIncludes(backup, "gpt-4o");
 
@@ -181,7 +184,7 @@ Deno.test("configureAgent(claude-code) — merges only ANTHROPIC keys, preserves
     assertEquals(content.theme, "dark");
     assertEquals(content.env.OTHER_KEY, "preserve-me");
     assertEquals(content.env.ANTHROPIC_BASE_URL, "http://127.0.0.1:11434");
-    assertEquals(content.env.ANTHROPIC_AUTH_TOKEN, "lomux");
+    assertEquals(content.env.ANTHROPIC_AUTH_TOKEN, "coco");
   });
 });
 
@@ -206,7 +209,7 @@ Deno.test("configureAgent(cline) — writes globalState with openai provider fie
 
     const secretsPath = `${homeDir}/.cline/data/secrets.json`;
     const secrets = JSON.parse(await Deno.readTextFile(secretsPath));
-    assertEquals(secrets.openAiApiKey, "lomux");
+    assertEquals(secrets.openAiApiKey, "coco");
   });
 });
 
@@ -262,7 +265,7 @@ Deno.test("verifyAgentConfig returns false when config file no longer contains e
       homeDir,
       skipValidation: true,
     });
-    // Overwrite with content that doesn't include the lomux endpoint
+    // Overwrite with content that doesn't include the coco endpoint
     await Deno.writeTextFile(entry.configPath, 'model = "gpt-4o"\n');
     assertEquals(await verifyAgentConfig(entry), false);
   });

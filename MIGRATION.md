@@ -1,66 +1,114 @@
-# Migration Guide: Coco -> Ardo
+# Migration Guide: Coco -> Modmux
 
-This repository has been renamed from **Coco** to **Ardo**.
+This project has been renamed from **Coco** to **Modmux**.
 
-Ardo is now the canonical project name, command name, package name, and
+Modmux is the canonical project name, command name, package name, and
 configuration namespace.
 
 ## What Changed
 
-- Project and repository identity moved to Ardo and ardo-org.
-- Canonical CLI command is now `ardo`.
-- Canonical config/state directory is now `~/.ardo`.
-- Canonical environment variables now use `ARDO_`.
-- npm package `ardo` is now canonical.
-- npm package `coco` has been discontinued; use the canonical `ardo` package.
+- Project and repository identity moved to Modmux.
+- Canonical CLI command is now `modmux`.
+- Canonical config/state directory is now `~/.modmux`.
+- Canonical environment variables now use `MODMUX_`.
+- npm package `@modmux/core` is now canonical.
+- npm package `@myty/coco` has been discontinued; use `@modmux/core` instead.
 
 ## Before/After Mapping
 
-| Area             | Before                 | After                              |
-| ---------------- | ---------------------- | ---------------------------------- |
-| Repository       | `github.com/myty/coco` | `github.com/ardo-org/ardo`         |
-| Website          | n/a                    | `https://ardo-org.github.io/ardo/` |
-| CLI command      | `coco`                 | `ardo`                             |
-| Deno/JSR install | `jsr:@myty/coco`       | `jsr:@ardo-org/ardo`               |
-| npm package      | `coco`                 | `ardo`                             |
-| Config directory | `~/.coco`              | `~/.ardo`                          |
-| PID file         | `~/.coco/coco.pid`     | `~/.ardo/ardo.pid`                 |
-| Log file         | `~/.coco/coco.log`     | `~/.ardo/ardo.log`                 |
-| Env prefix       | `COCO_*`               | `ARDO_*`                           |
+| Area             | Before                 | After                    |
+| ---------------- | ---------------------- | ------------------------ |
+| Repository       | `github.com/myty/coco` | `github.com/myty/modmux` |
+| CLI command      | `coco`                 | `modmux`                 |
+| Deno/JSR install | `jsr:@myty/coco`       | `jsr:@modmux/cli`        |
+| npm package      | `@myty/coco`           | `@modmux/core`           |
+| Config directory | `~/.coco`              | `~/.modmux`              |
+| PID file         | `~/.coco/coco.pid`     | `~/.modmux/modmux.pid`   |
+| Log file         | `~/.coco/coco.log`     | `~/.modmux/modm.log`     |
+| Env prefix       | `COCO_*`               | `MODMUX_*`               |
 
 ## Upgrade Steps
 
 1. Install the canonical CLI.
 
 ```bash
-npm install -g ardo
+npm install -g @modmux/core
 ```
 
 Or with Deno:
 
 ```bash
-deno install --global --allow-all -n ardo jsr:@ardo-org/ardo
+deno install --global --allow-all -n modmux jsr:@modmux/cli
 ```
 
-2. Update scripts and automation from `coco` to `ardo`.
+2. Update scripts and automation from `coco` to `modmux`.
 
-3. Update environment variables from `COCO_*` to `ARDO_*`.
+3. Update environment variables from `COCO_*` to `MODMUX_*`.
 
-4. Move any direct path references from `~/.coco` to `~/.ardo`.
+4. Move any direct path references from `~/.coco` to `~/.modmux`.
 
 ## Compatibility Behavior
 
-- Running `coco` still works in the compatibility window and prints a
-  deprecation warning.
-- `COCO_*` variables are still accepted as fallback when matching `ARDO_*`
-  values are not set.
-- Existing data under `~/.coco` is supported through non-destructive
-  migration/fallback behavior.
+- Running `coco` no longer works; use `modmux` instead.
+- `COCO_*` variables are no longer supported; use `MODMUX_*` variables instead.
+- Existing data under `~/.coco` is not automatically migrated; manual migration
+  may be required.
 
-## Deprecation Timeline
+---
 
-- Current series (`0.x`): compatibility mode is enabled.
-- Next major (`1.0.0`): legacy `coco` command and `COCO_*` compatibility are
-  planned for removal.
+# Migration Guide: Ardo -> Coco
 
-The team will announce final removal details in release notes before `1.0.0`.
+This repository has been renamed from **Ardo** back to **Coco**.
+
+Coco is now the canonical project name, command name, package name, and
+configuration namespace.
+
+## What Changed
+
+- Project and repository identity moved back to Coco and myty.
+- Canonical CLI command is now `coco`.
+- Canonical config/state directory is now `~/.coco`.
+- Canonical environment variables now use `COCO_`.
+- npm package `@myty/coco` is now canonical.
+- npm package `@myty/ardo` has been discontinued; use the canonical `@myty/coco`
+  package.
+
+## Before/After Mapping
+
+| Area             | Before                     | After                  |
+| ---------------- | -------------------------- | ---------------------- |
+| Repository       | `github.com/ardo-org/ardo` | `github.com/myty/coco` |
+| CLI command      | `ardo`                     | `coco`                 |
+| Deno/JSR install | `jsr:@ardo-org/ardo`       | `jsr:@myty/coco`       |
+| npm package      | `@myty/ardo`               | `@myty/coco`           |
+| Config directory | `~/.ardo`                  | `~/.coco`              |
+| PID file         | `~/.ardo/ardo.pid`         | `~/.coco/coco.pid`     |
+| Log file         | `~/.ardo/ardo.log`         | `~/.coco/coco.log`     |
+| Env prefix       | `ARDO_*`                   | `COCO_*`               |
+
+## Upgrade Steps
+
+1. Install the canonical CLI.
+
+```bash
+npm install -g @myty/coco
+```
+
+Or with Deno:
+
+```bash
+deno install --global --allow-all -n coco jsr:@myty/coco
+```
+
+2. Update scripts and automation from `ardo` to `coco`.
+
+3. Update environment variables from `ARDO_*` to `COCO_*`.
+
+4. Move any direct path references from `~/.ardo` to `~/.coco`.
+
+## Compatibility Behavior
+
+- Running `ardo` no longer works; use `coco` instead.
+- `ARDO_*` variables are no longer supported; use `COCO_*` variables instead.
+- Existing data under `~/.ardo` is not automatically migrated; manual migration
+  may be required.

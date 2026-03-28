@@ -1,4 +1,4 @@
-# Lomux Development Guidelines
+# Coco Development Guidelines
 
 Auto-generated from all feature plans. Last updated: 2026-03-10
 
@@ -21,8 +21,8 @@ Auto-generated from all feature plans. Last updated: 2026-03-10
 
 - **Cross-platform binaries** - macOS (arm64/x64), Linux (x64/arm64), Windows
   (x64)
-- **NPM distribution** - `lomux` package (`npm install -g lomux`)
-- **JSR registry** - `jsr:@lomux/lomux`
+- **NPM distribution** - `@myty/coco` package (`npm install -g @myty/coco`) --
+  **JSR registry** - `jsr:@myty/coco`
 - **GitHub Actions** - CI/CD and automation
 
 ### Architecture Patterns
@@ -69,17 +69,17 @@ src/
 │   ├── types.ts     # Type definitions
 │   └── mod.ts       # Module exports
 ├── config/          # Configuration persistence
-│   └── store.ts     # loadConfig/saveConfig, DEFAULT_CONFIG, ~/.lomux/config.json
+│   └── store.ts     # loadConfig/saveConfig, DEFAULT_CONFIG, ~/.coco/config.json
 ├── lib/             # Shared utilities
 │   ├── errors.ts    # Error handling utilities
-│   ├── log.ts       # Structured JSON logger → ~/.lomux/lomux.log
+│   ├── log.ts       # Structured JSON logger → ~/.coco/coco.log
 │   ├── process.ts   # findBinary(name), isProcessAlive(pid)
 │   └── token.ts     # Token utilities
 └── version.ts       # VERSION = "0.2.0"
 
 tests/
 ├── contract/        # Contract tests for external interfaces
-│   ├── cli_test.ts            # lomux start/stop output strings
+│   ├── cli_test.ts            # coco start/stop output strings
 │   ├── cli_interface_test.ts  # full CLI contract
 │   ├── openai-proxy_test.ts   # /v1/chat/completions, /v1/models
 │   ├── model-translation_test.ts  # alias resolution
@@ -218,7 +218,7 @@ deno test tests/integration/    # Integration tests only
 ### Building
 
 ```bash
-deno task compile               # Compile native binary → bin/lomux
+deno task compile               # Compile native binary → bin/coco
 deno task sync-version          # Sync version across all artifacts
 ```
 
@@ -231,13 +231,13 @@ deno task sync-version          # Sync version across all artifacts
   - Adopted LeanSpec workflow commands (`new`, `plan`, `validate`, `backfill`,
     `board`)
 
-- **2026-03-10**: Lomux v0.2.0 — full migration from Lomux
+- **2026-03-10**: Coco v0.2.0 — full migration from Lomux
   - Added background daemon service (start/stop/restart/status)
   - Added OpenAI-compatible proxy endpoint (/v1/chat/completions, /v1/models)
   - Added agent detection engine (PATH + VS Code + JetBrains)
   - Added per-agent config writers (7 agents, backup/restore)
   - Added minimal TUI (Space/Enter/q, ANSI renderer)
-  - Added `lomux models`, `lomux doctor`, `lomux configure`, `lomux unconfigure`
+  - Added `coco models`, `coco doctor`, `coco configure`, `coco unconfigure`
   - Removed Lomux-specific launch/session modules
 
 - **Previous**: Lomux v0.1.x — Claude Code + GitHub Copilot bridge

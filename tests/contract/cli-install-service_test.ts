@@ -1,5 +1,5 @@
 /**
- * Contract tests for lomux install-service / uninstall-service CLI commands.
+ * Contract tests for coco install-service / uninstall-service CLI commands.
  *
  * Verifies that:
  * - install-service and uninstall-service appear in --help output

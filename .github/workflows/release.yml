@@ -27,23 +27,23 @@ jobs:
           - platform: macos-arm64
             runner: macos-latest
             target: aarch64-apple-darwin
-            artifact: lomux-macos-arm64
+            artifact: coco-macos-arm64
           - platform: macos-x64
             runner: macos-13
             target: x86_64-apple-darwin
-            artifact: lomux-macos-x64
+            artifact: coco-macos-x64
           - platform: linux-x64
             runner: ubuntu-latest
             target: x86_64-unknown-linux-gnu
-            artifact: lomux-linux-x64
+            artifact: coco-linux-x64
           - platform: linux-arm64
             runner: ubuntu-latest
             target: aarch64-unknown-linux-gnu
-            artifact: lomux-linux-arm64
+            artifact: coco-linux-arm64
           - platform: windows-x64
             runner: windows-latest
             target: x86_64-pc-windows-msvc
-            artifact: lomux-windows-x64.exe
+            artifact: coco-windows-x64.exe
     steps:
       - uses: actions/checkout@v6
       - uses: denoland/setup-deno@v2
@@ -78,7 +78,7 @@ jobs:
       - uses: actions/checkout@v6
       - uses: actions/download-artifact@v8
         with:
-          pattern: lomux-*
+          pattern: coco-*
           merge-multiple: true
       - name: Generate release manifest
         run: |
@@ -89,11 +89,11 @@ jobs:
           # Build checksums array
           CHECKSUMS="["
           FIRST=true
-          for f in lomux-*; do
-            SHA256=$(sha256sum "$f" | awk '{print $1}')
-            PLATFORM="${f#lomux-}"
-            FILENAME="$f"
-            DOWNLOAD_URL="https://github.com/${{ github.repository }}/releases/download/${TAG}/${FILENAME}"
+           for f in coco-*; do
+             SHA256=$(sha256sum "$f" | awk '{print $1}')
+             PLATFORM="${f#coco-}"
+             FILENAME="$f"
+             DOWNLOAD_URL="https://github.com/${{ github.repository }}/releases/download/${TAG}/${FILENAME}"
             if [ "$FIRST" = true ]; then
               FIRST=false
             else
@@ -117,7 +117,7 @@ jobs:
       - uses: softprops/action-gh-release@v2
         with:
           files: |
-            lomux-*
+            coco-*
             release-manifest.json
           generate_release_notes: true
 
@@ -135,7 +135,7 @@ jobs:
           deno-version: v2.x
       # One-Time Setup: In your JSR package settings, enable "Publish from CI"
       # and add this repository as a trusted publisher.
-      # See: https://jsr.io/@lomux/lomux/settings
+      # See: https://jsr.io/@myty/coco/settings
       - name: Publish to JSR
         run: deno publish
 
@@ -155,38 +155,38 @@ jobs:
       - name: Download all build artifacts
         uses: actions/download-artifact@v4
         with:
-          pattern: lomux-*
+          pattern: coco-*
           merge-multiple: true
       - name: Copy binaries into platform packages and publish
         run: |
           # Publish platform packages first (they must exist before main package)
           declare -A PLATFORM_MAP=(
-            ["lomux-macos-arm64"]="darwin-arm64"
-            ["lomux-macos-x64"]="darwin-x64"
-            ["lomux-linux-x64"]="linux-x64"
-            ["lomux-linux-arm64"]="linux-arm64"
-            ["lomux-windows-x64.exe"]="win32-x64"
+            ["coco-macos-arm64"]="darwin-arm64"
+            ["coco-macos-x64"]="darwin-x64"
+            ["coco-linux-x64"]="linux-x64"
+            ["coco-linux-arm64"]="linux-arm64"
+            ["coco-windows-x64.exe"]="win32-x64"
           )
 
           for artifact in "${!PLATFORM_MAP[@]}"; do
             platform="${PLATFORM_MAP[$artifact]}"
-            pkg_dir="npm/@lomux/${platform}"
+            pkg_dir="npm/@myty/${platform}"
             bin_dir="${pkg_dir}/bin"
             mkdir -p "${bin_dir}"
 
             if [[ "$artifact" == *.exe ]]; then
-              cp "${artifact}" "${bin_dir}/lomux.exe"
+              cp "${artifact}" "${bin_dir}/coco.exe"
             else
-              cp "${artifact}" "${bin_dir}/lomux"
-              chmod +x "${bin_dir}/lomux"
+              cp "${artifact}" "${bin_dir}/coco"
+              chmod +x "${bin_dir}/coco"
             fi
 
-            echo "Publishing @lomux/${platform}..."
+            echo "Publishing @myty/${platform}..."
             npm publish "${pkg_dir}" --access public
           done
 
           # Publish main package after platform packages.
-          echo "Publishing lomux..."
-          npm publish npm/lomux --access public
+          echo "Publishing coco..."
+          npm publish npm/coco --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

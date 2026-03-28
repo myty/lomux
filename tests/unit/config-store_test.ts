@@ -5,11 +5,11 @@ import {
   loadConfig,
   saveConfig,
 } from "../../src/config/store.ts";
-import type { LomuxConfig } from "../../src/config/store.ts";
+import type { CocoConfig as LomuxConfig } from "../../src/config/store.ts";
 
-// Use a temp directory for all tests to avoid touching ~/.lomux
+// Use a temp directory for all tests to avoid touching ~/.coco
 async function withTempHome<T>(fn: (dir: string) => Promise<T>): Promise<T> {
-  const tmp = await Deno.makeTempDir({ prefix: "lomux_test_" });
+  const tmp = await Deno.makeTempDir({ prefix: "coco_test_" });
   const origHome = Deno.env.get("HOME");
   Deno.env.set("HOME", tmp);
   try {
@@ -39,18 +39,18 @@ Deno.test("loadConfig — returns DEFAULT_CONFIG on first run", async () => {
   });
 });
 
-Deno.test("loadConfig — creates ~/.lomux dir if absent", async () => {
+Deno.test("loadConfig — creates ~/.coco dir if absent", async () => {
   await withTempHome(async (home) => {
     await loadConfig();
-    const stat = await Deno.stat(join(home, ".lomux"));
+    const stat = await Deno.stat(join(home, ".coco"));
     assertEquals(stat.isDirectory, true);
   });
 });
 
-Deno.test("loadConfig — migrates legacy ~/.lomux/config.json to ~/.lomux", async () => {
+Deno.test("loadConfig — migrates legacy ~/.coco/config.json to ~/.coco", async () => {
   await withTempHome(async (home) => {
-    const legacyDir = join(home, ".lomux");
-    const canonicalDir = join(home, ".lomux");
+    const legacyDir = join(home, ".coco");
+    const canonicalDir = join(home, ".coco");
     await Deno.mkdir(legacyDir, { recursive: true });
 
     const legacyConfig: LomuxConfig = {
@@ -79,8 +79,8 @@ Deno.test("loadConfig — migrates legacy ~/.lomux/config.json to ~/.lomux", asy
 
 Deno.test("loadConfig — migration remains idempotent across repeated loads", async () => {
   await withTempHome(async (home) => {
-    const legacyDir = join(home, ".lomux");
-    const canonicalDir = join(home, ".lomux");
+    const legacyDir = join(home, ".coco");
+    const canonicalDir = join(home, ".coco");
     await Deno.mkdir(legacyDir, { recursive: true });
 
     await Deno.writeTextFile(
@@ -121,7 +121,7 @@ Deno.test("saveConfig + loadConfig — round-trip", async () => {
       usageMetrics: {
         persist: true,
         snapshotIntervalMs: 120_000,
-        filePath: "/tmp/lomux-usage.json",
+        filePath: "/tmp/coco-usage.json",
       },
     };
     await saveConfig(config);
@@ -135,7 +135,7 @@ Deno.test("saveConfig + loadConfig — round-trip", async () => {
     assertEquals(loaded.streaming.enableDiagnostics, true);
     assertEquals(loaded.usageMetrics.persist, true);
     assertEquals(loaded.usageMetrics.snapshotIntervalMs, 120_000);
-    assertEquals(loaded.usageMetrics.filePath, "/tmp/lomux-usage.json");
+    assertEquals(loaded.usageMetrics.filePath, "/tmp/coco-usage.json");
   });
 });
 
@@ -190,7 +190,7 @@ Deno.test("saveConfig — rejects invalid logLevel", async () => {
 
 Deno.test("loadConfig — throws on malformed JSON", async () => {
   await withTempHome(async (home) => {
-    const dir = join(home, ".lomux");
+    const dir = join(home, ".coco");
     await Deno.mkdir(dir, { recursive: true });
     await Deno.writeTextFile(join(dir, "config.json"), "{ bad json }");
     await assertRejects(
@@ -201,29 +201,29 @@ Deno.test("loadConfig — throws on malformed JSON", async () => {
   });
 });
 
-Deno.test("loadConfig — LOMUX_PORT overrides file/default", async () => {
+Deno.test("loadConfig — COCO_PORT overrides file/default", async () => {
   await withTempHome(async () => {
-    Deno.env.set("LOMUX_PORT", "13000");
+    Deno.env.set("COCO_PORT", "13000");
     try {
       const loaded = await loadConfig();
       assertEquals(loaded.port, 13000);
     } finally {
-      Deno.env.delete("LOMUX_PORT");
+      Deno.env.delete("COCO_PORT");
     }
   });
 });
 
-Deno.test("loadConfig — throws on invalid LOMUX_PORT", async () => {
+Deno.test("loadConfig — throws on invalid COCO_PORT", async () => {
   await withTempHome(async () => {
-    Deno.env.set("LOMUX_PORT", "not-a-number");
+    Deno.env.set("COCO_PORT", "not-a-number");
     try {
       await assertRejects(
         () => loadConfig(),
         Error,
-        "Invalid LOMUX_PORT value",
+        "Invalid COCO_PORT value",
       );
     } finally {
-      Deno.env.delete("LOMUX_PORT");
+      Deno.env.delete("COCO_PORT");
     }
   });
 });

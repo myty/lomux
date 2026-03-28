@@ -16,7 +16,7 @@ import {
 // ---------------------------------------------------------------------------
 
 async function makeTempHome(): Promise<string> {
-  return await Deno.makeTempDir({ prefix: "lomux_test_home_" });
+  return await Deno.makeTempDir({ prefix: "coco_test_home_" });
 }
 
 async function cleanup(dir: string): Promise<void> {
@@ -40,15 +40,15 @@ Deno.test({
       const result = await getServiceManager({ home }).install({
         dryRun: true,
       });
-      assertStringIncludes(result.configContent, "com.lomux");
+      assertStringIncludes(result.configContent, "com.myty.coco");
       assertStringIncludes(result.configContent, "--daemon");
       assertStringIncludes(result.configContent, "RunAtLoad");
       assertStringIncludes(result.configContent, "KeepAlive");
       assertStringIncludes(result.configContent, "StandardOutPath");
-      assertStringIncludes(result.configContent, "lomux.log");
+      assertStringIncludes(result.configContent, "coco.log");
       assertEquals(result.installed, true);
     } catch (err) {
-      // If lomux binary not found, that is expected in CI without global install
+      // If coco binary not found, that is expected in CI without global install
       if (
         err instanceof Error && err.message.includes("not installed globally")
       ) {
@@ -71,7 +71,7 @@ Deno.test({
         dryRun: true,
       });
       assertStringIncludes(result.configPath, "Library/LaunchAgents");
-      assertStringIncludes(result.configPath, "com.lomux.plist");
+      assertStringIncludes(result.configPath, "com.myty.coco.plist");
     } catch (err) {
       if (
         err instanceof Error && err.message.includes("not installed globally")
@@ -134,7 +134,7 @@ Deno.test({
       assertStringIncludes(result.configContent, "--daemon");
       assertStringIncludes(result.configContent, "Restart=on-failure");
       assertStringIncludes(result.configContent, "WantedBy=default.target");
-      assertStringIncludes(result.configContent, "lomux.log");
+      assertStringIncludes(result.configContent, "coco.log");
       assertEquals(result.installed, true);
     } catch (err) {
       if (
@@ -163,7 +163,7 @@ Deno.test({
         dryRun: true,
       });
       assertStringIncludes(result.configPath, ".config/systemd/user");
-      assertStringIncludes(result.configPath, "lomux.service");
+      assertStringIncludes(result.configPath, "coco.service");
     } catch (err) {
       if (
         err instanceof Error &&
@@ -204,7 +204,7 @@ Deno.test({
     const home = await makeTempHome();
     const plistDir = `${home}/Library/LaunchAgents`;
     await Deno.mkdir(plistDir, { recursive: true });
-    await Deno.writeTextFile(`${plistDir}/com.lomux.plist`, "<plist/>");
+    await Deno.writeTextFile(`${plistDir}/com.myty.coco.plist`, "<plist/>");
     try {
       const installed = await getServiceManager({ home }).isInstalled();
       assertEquals(installed, true);
@@ -222,7 +222,7 @@ Deno.test({
     const home = await makeTempHome();
     const unitDir = `${home}/.config/systemd/user`;
     await Deno.mkdir(unitDir, { recursive: true });
-    await Deno.writeTextFile(`${unitDir}/lomux.service`, "[Unit]");
+    await Deno.writeTextFile(`${unitDir}/coco.service`, "[Unit]");
     try {
       const installed = await getServiceManager({ home }).isInstalled();
       assertEquals(installed, true);
@@ -257,13 +257,13 @@ Deno.test({
 });
 
 Deno.test({
-  name: "isServiceInstalled — returns true when Lomux plist exists (macOS)",
+  name: "isServiceInstalled — returns true when coco plist exists (macOS)",
   ignore: Deno.build.os !== "darwin",
   async fn() {
     const home = await makeTempHome();
     const plistDir = `${home}/Library/LaunchAgents`;
     await Deno.mkdir(plistDir, { recursive: true });
-    await Deno.writeTextFile(`${plistDir}/com.lomux.plist`, "<plist/>");
+    await Deno.writeTextFile(`${plistDir}/com.myty.coco.plist`, "<plist/>");
     try {
       const installed = await getServiceManager({ home }).isInstalled();
       assertEquals(installed, true);
@@ -274,13 +274,13 @@ Deno.test({
 });
 
 Deno.test({
-  name: "isServiceInstalled — returns true when Lomux unit file exists (Linux)",
+  name: "isServiceInstalled — returns true when coco unit file exists (Linux)",
   ignore: Deno.build.os !== "linux",
   async fn() {
     const home = await makeTempHome();
     const unitDir = `${home}/.config/systemd/user`;
     await Deno.mkdir(unitDir, { recursive: true });
-    await Deno.writeTextFile(`${unitDir}/lomux.service`, "[Unit]");
+    await Deno.writeTextFile(`${unitDir}/coco.service`, "[Unit]");
     try {
       const installed = await getServiceManager({ home }).isInstalled();
       assertEquals(installed, true);
@@ -298,17 +298,18 @@ Deno.test({
     const home = await makeTempHome();
     const plistDir = `${home}/Library/LaunchAgents`;
     await Deno.mkdir(plistDir, { recursive: true });
-    await Deno.writeTextFile(`${plistDir}/com.lomux.plist`, "<plist/>");
+    await Deno.writeTextFile(`${plistDir}/com.myty.coco.plist`, "<plist/>");
     try {
       const result = await getServiceManager({ home }).uninstall({
         dryRun: true,
       });
       assertEquals(result.removed, true);
       // dryRun should NOT actually remove the file
-      const stillExists = await Deno.stat(`${plistDir}/com.lomux.plist`).then(
-        () => true,
-        () => false,
-      );
+      const stillExists = await Deno.stat(`${plistDir}/com.myty.coco.plist`)
+        .then(
+          () => true,
+          () => false,
+        );
       assertEquals(stillExists, true, "dryRun should not remove file");
     } finally {
       await cleanup(home);
@@ -322,22 +323,23 @@ Deno.test({
 
 Deno.test({
   name:
-    "uninstallService dryRun — returns removed: true when Lomux file exists (macOS)",
+    "uninstallService dryRun — returns removed: true when coco file exists (macOS)",
   ignore: Deno.build.os !== "darwin",
   async fn() {
     const home = await makeTempHome();
     const plistDir = `${home}/Library/LaunchAgents`;
     await Deno.mkdir(plistDir, { recursive: true });
-    await Deno.writeTextFile(`${plistDir}/com.lomux.plist`, "<plist/>");
+    await Deno.writeTextFile(`${plistDir}/com.myty.coco.plist`, "<plist/>");
     try {
       const result = await getServiceManager({ home }).uninstall({
         dryRun: true,
       });
       assertEquals(result.removed, true);
-      const stillExists = await Deno.stat(`${plistDir}/com.lomux.plist`).then(
-        () => true,
-        () => false,
-      );
+      const stillExists = await Deno.stat(`${plistDir}/com.myty.coco.plist`)
+        .then(
+          () => true,
+          () => false,
+        );
       assertEquals(stillExists, true, "dryRun should not remove file");
     } finally {
       await cleanup(home);
@@ -352,7 +354,7 @@ Deno.test({
     const result = await getServiceManager().install({ dryRun: true });
     assertEquals(result.installed, true);
     assertStringIncludes(result.configPath, "Windows SCM registry");
-    assertStringIncludes(result.configContent, "lomux");
+    assertStringIncludes(result.configContent, "coco");
     assertStringIncludes(result.configContent, "--daemon");
   },
 });
@@ -362,7 +364,7 @@ Deno.test({
   fn() {
     const err = new UnsupportedPlatformError("Windows");
     assertStringIncludes(err.message, "coming soon");
-    assertStringIncludes(err.message, "lomux start");
+    assertStringIncludes(err.message, "coco start");
     assertEquals(err.name, "UnsupportedPlatformError");
   },
 });

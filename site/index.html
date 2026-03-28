@@ -3,10 +3,10 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>lomux | Use GitHub Copilot with Claude Code, Cline, and Codex</title>
+    <title>Modmux | The Model Multiplexing Layer for Coding Agents</title>
     <meta
       name="description"
-      content="A lot of agentic coding tools already support GitHub Copilot. The most popular ones still do not. lomux gives Claude Code, Cline, and Codex one reliable local path to Copilot."
+      content="Modmux provides a unified, local interface for routing requests across multiple model providers and protocols. Built for reliability, clarity, and modern multi-agent workflows."
     />
     <link rel="icon" href="./logo.png" type="image/png" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -22,16 +22,16 @@
     <div id="header-sentinel" aria-hidden="true"></div>
     <header class="site-header">
       <div class="site-header-inner">
-        <a class="brand" href="#top" aria-label="lomux home">
+        <a class="brand" href="#top" aria-label="Modmux home">
           <img src="./logo.png" class="brand-logo" alt="" />
-          <span class="brand-text">lomux</span>
+          <span class="brand-text">Modmux</span>
         </a>
         <nav class="site-nav" aria-label="Primary">
           <a href="#why">Why</a>
           <a href="#install">Install</a>
           <a href="#how-it-works">How it works</a>
           <a href="#faq">FAQ</a>
-          <a href="https://github.com/lomux-org/lomux">GitHub</a>
+          <a href="https://github.com/myty/modmux">GitHub</a>
         </nav>
       </div>
     </header>
@@ -39,18 +39,18 @@
       <main id="top">
         <section class="hero section">
           <div class="hero-copy reveal">
-            <p class="eyebrow">Claude Code, Cline, and Codex</p>
+            <p class="eyebrow">Model Routing Layer</p>
             <h1>
-              Some of the most popular coding agents still miss GitHub Copilot.
+              One interface. Every model.
             </h1>
             <p class="hero-body">
-              A lot of agentic coding tools already integrate with GitHub
-              Copilot. Claude Code, Cline, and Codex still do not. lomux closes
-              that gap with one reliable localhost path you can inspect,
-              control, and undo.
+              Modmux provides a unified, local interface for routing requests
+              across multiple model providers and protocols. Built for
+              reliability, clarity, and modern multi-agent workflows.
             </p>
             <div class="hero-actions">
-              <a class="button button-primary" href="#install">Install lomux</a>
+              <a class="button button-primary" href="#install"
+              >Install Modmux</a>
               <a class="button button-secondary" href="#how-it-works"
               >See the flow</a>
             </div>
@@ -63,7 +63,7 @@
 
           <div
             class="hero-panel reveal reveal-delay-1"
-            aria-label="lomux overview"
+            aria-label="Modmux overview"
           >
             <div class="terminal-card">
               <div class="terminal-topline">
@@ -72,7 +72,7 @@
                 <span></span>
               </div>
               <div class="terminal-body">
-                <p><span class="prompt">$</span> lomux status</p>
+                <p><span class="prompt">$</span> modmux status</p>
                 <p>Service:&nbsp;&nbsp;Not installed</p>
                 <p>
                   State:&nbsp;&nbsp;&nbsp;&nbsp;Running at
@@ -81,7 +81,9 @@
                 <p>Agents:&nbsp;&nbsp;&nbsp;claude-code, cline</p>
                 <p>Copilot:&nbsp;&nbsp;Authenticated ✓</p>
                 <p class="terminal-gap"></p>
-                <p><span class="prompt">$</span> lomux configure claude-code</p>
+                <p>
+                  <span class="prompt">$</span> modmux configure claude-code
+                </p>
                 <p>claude-code configured.</p>
               </div>
             </div>
@@ -98,15 +100,14 @@
 
         <section id="why" class="section section-grid reveal">
           <div class="section-heading">
-            <p class="eyebrow">Why lomux</p>
+            <p class="eyebrow">Why Modmux</p>
             <h2>
-              GitHub Copilot support exists. It just misses some of the tools
-              people want most.
+              The model routing layer for coding agents.
             </h2>
             <p>
-              lomux gives those agents one visible local path to Copilot with
-              explicit service controls, reversible configuration, and a
-              compatibility surface that stays consistent instead of drifting.
+              Modmux normalizes differences between APIs so your agents can
+              focus on logic—not plumbing. A stable, local gateway that keeps
+              configuration reversible and visible.
             </p>
           </div>
           <div class="card-grid three-up">
@@ -121,16 +122,16 @@
             <article class="info-card accent-mint">
               <h3>Stays on your machine</h3>
               <p>
-                lomux stays on localhost. It acts as a local compatibility layer
-                rather than a hosted relay, sync service, or remote control
-                plane.
+                Modmux stays on localhost. It acts as a local compatibility
+                layer rather than a hosted relay, sync service, or remote
+                control plane.
               </p>
             </article>
             <article class="info-card accent-rust">
               <h3>Easy to undo</h3>
               <p>
                 Agent configuration is reversible by design. Run
-                <code>lomux unconfigure</code> and restore supported agents to
+                <code>modmux unconfigure</code> and restore supported agents to
                 their previous state.
               </p>
             </article>
@@ -153,16 +154,16 @@
               <article class="feature-row">
                 <h3>One local API surface</h3>
                 <p>
-                  lomux exposes Anthropic-compatible and OpenAI-compatible local
-                  endpoints so supported tools can point at one place instead of
-                  drifting into one-off configuration branches.
+                  Modmux exposes Anthropic-compatible and OpenAI-compatible
+                  local endpoints so supported tools can point at one place
+                  instead of drifting into one-off configuration branches.
                 </p>
               </article>
               <article class="feature-row">
                 <h3>Operational controls you can inspect</h3>
                 <p>
                   Start, stop, restart, inspect status, check health, and
-                  optionally install lomux as an OS login service. The runtime
+                  optionally install Modmux as an OS login service. The runtime
                   stays visible instead of disappearing behind guesswork.
                 </p>
               </article>
@@ -183,7 +184,7 @@
                 <li>Codex</li>
               </ul>
               <p>
-                lomux is intentionally narrow: it stays focused on being a
+                Modmux is intentionally narrow: it stays focused on being a
                 stable, reliable, predictable local gateway rather than becoming
                 another chat client or an agent runtime of its own.
               </p>
@@ -209,23 +210,23 @@
                 The shortest path on a machine with Node.js 18+.
               </p>
               <div class="code-block">
-                <code>npm install -g lomux</code>
+                <code>npm install -g @modmux/core</code>
                 <button
                   type="button"
                   class="copy-button"
-                  data-copy="npm install -g lomux"
+                  data-copy="npm install -g @modmux/core"
                 >
                   Copy
                 </button>
               </div>
               <ol class="step-list">
-                <li>Install lomux globally.</li>
+                <li>Install Modmux globally.</li>
                 <li>
-                  Run <code>lomux start</code> and complete GitHub
+                  Run <code>modmux start</code> and complete GitHub
                   authentication.
                 </li>
                 <li>
-                  Run <code>lomux configure claude-code</code> or configure
+                  Run <code>modmux configure claude-code</code> or configure
                   another supported agent.
                 </li>
               </ol>
@@ -235,11 +236,11 @@
               <h3>Deno / JSR</h3>
               <p>Useful when Deno is already part of your toolchain.</p>
               <div class="code-block compact">
-                <code>deno install -A -g jsr:@lomux/lomux</code>
+                <code>deno install -A -g jsr:@modmux/cli</code>
                 <button
                   type="button"
                   class="copy-button"
-                  data-copy="deno install -A -g jsr:@lomux/lomux"
+                  data-copy="deno install -A -g jsr:@modmux/cli"
                 >
                   Copy
                 </button>
@@ -253,7 +254,7 @@
                 want a runtime dependency.
               </p>
               <div class="link-row">
-                <a href="https://github.com/lomux-org/lomux/releases"
+                <a href="https://github.com/myty/modmux/releases"
                 >Open releases</a>
               </div>
             </article>
@@ -265,8 +266,8 @@
                 installing.
               </p>
               <div class="code-block stacked">
-                <code>git clone https://github.com/lomux-org/lomux.git</code>
-                <code>cd lomux</code>
+                <code>git clone https://github.com/myty/modmux.git</code>
+                <code>cd modmux</code>
                 <code>deno task install</code>
               </div>
             </article>
@@ -288,9 +289,9 @@
             </div>
             <div class="flow-arrow">→</div>
             <div class="flow-node flow-node-primary">
-              <h3>lomux</h3>
+              <h3>Modmux</h3>
               <p>
-                lomux runs on 127.0.0.1, exposes compatible endpoints, and
+                Modmux runs on 127.0.0.1, exposes compatible endpoints, and
                 translates request and response shapes through one stable local
                 gateway between your tools and Copilot.
               </p>
@@ -307,14 +308,14 @@
             <div class="flow-node">
               <h3>GitHub Copilot</h3>
               <p>
-                lomux authenticates with GitHub and forwards the translated
+                Modmux authenticates with GitHub and forwards the translated
                 request to Copilot-backed models while the trust boundary stays
                 local and visible.
               </p>
             </div>
           </div>
           <div class="trust-note">
-            <strong>Trust boundary:</strong> lomux is a local gateway, not a
+            <strong>Trust boundary:</strong> Modmux is a local gateway, not a
             hosted relay. It binds to localhost and keeps configuration changes
             reversible.
           </div>
@@ -352,9 +353,9 @@
               <pre
                 class="demo-code"
               >
-$ lomux
+$ modmux
 
-lomux - Local AI Gateway
+Modmux - Model Multiplexing Layer
 Status: Running on http://localhost:11434
 Copilot: Authenticated ✓
 
@@ -386,7 +387,7 @@ Copilot: Authenticated ✓
             <div class="comparison-row comparison-head" role="row">
               <span role="columnheader">Approach</span>
               <span role="columnheader">What you manage</span>
-              <span role="columnheader">What lomux changes</span>
+              <span role="columnheader">What Modmux changes</span>
             </div>
             <div class="comparison-row" role="row">
               <span role="cell">Per-agent manual setup</span>
@@ -398,7 +399,7 @@ Copilot: Authenticated ✓
                 time</span>
             </div>
             <div class="comparison-row" role="row">
-              <span role="cell">lomux</span>
+              <span role="cell">Modmux</span>
               <span role="cell"
               >One local gateway, one install flow, reversible agent
                 configuration</span>
@@ -418,12 +419,12 @@ Copilot: Authenticated ✓
             <details>
               <summary>Do I need a GitHub Copilot subscription?</summary>
               <p>
-                Yes. lomux routes requests through GitHub Copilot, so you need
+                Yes. Modmux routes requests through GitHub Copilot, so you need
                 an active Copilot-backed account.
               </p>
             </details>
             <details>
-              <summary>Does lomux expose an API on my network?</summary>
+              <summary>Does Modmux expose an API on my network?</summary>
               <p>
                 No. The server binds to 127.0.0.1, which keeps the service local
                 to your machine.
@@ -432,15 +433,15 @@ Copilot: Authenticated ✓
             <details>
               <summary>What if port 11434 is already in use?</summary>
               <p>
-                lomux starts at 11434 and scans upward if that port is occupied.
-                Use <code>lomux status</code> to confirm the active local
-                endpoint.
+                Modmux starts at 11434 and scans upward if that port is
+                occupied. Use <code>modmux status</code> to confirm the active
+                local endpoint.
               </p>
             </details>
             <details>
               <summary>Can I undo a configuration change?</summary>
               <p>
-                Yes. lomux supports unconfiguring supported agents and is
+                Yes. Modmux supports unconfiguring supported agents and is
                 designed around reversible configuration management.
               </p>
             </details>
@@ -452,7 +453,7 @@ Copilot: Authenticated ✓
               </p>
             </details>
             <details>
-              <summary>Do I need Deno to use lomux?</summary>
+              <summary>Do I need Deno to use Modmux?</summary>
               <p>
                 No. npm and direct binary installs do not require Deno. Deno is
                 only needed for the JSR and source-based paths.
@@ -472,7 +473,7 @@ Copilot: Authenticated ✓
             <article class="status-card">
               <h3>Current release posture</h3>
               <p>
-                lomux is at v0.3.0 and focused on a tight local gateway loop:
+                Modmux is at v0.3.0 and focused on a tight local gateway loop:
                 authenticate, start the service, configure a supported agent,
                 and route requests through one visible control point.
               </p>
@@ -485,17 +486,17 @@ Copilot: Authenticated ✓
                 hidden background magic.
               </p>
               <div class="status-links">
-                <a href="https://github.com/lomux-org/lomux/blob/main/README.md"
+                <a href="https://github.com/myty/modmux/blob/main/README.md"
                 >Read the README</a>
-                <a href="https://github.com/lomux-org/lomux/releases"
+                <a href="https://github.com/myty/modmux/releases"
                 >Read releases</a>
               </div>
             </article>
             <article class="status-card">
               <h3>Product boundaries</h3>
               <p>
-                lomux is not a hosted relay, a chat app, or an agent runtime. It
-                is a stable local compatibility layer for supported agents on
+                Modmux is not a hosted relay, a chat app, or an agent runtime.
+                It is a stable local compatibility layer for supported agents on
                 GitHub Copilot, and it is better for staying narrow.
               </p>
             </article>
@@ -505,14 +506,14 @@ Copilot: Authenticated ✓
 
       <footer class="site-footer">
         <p>
-          lomux is a stable local gateway for supported coding agents on GitHub
+          Modmux is a stable local gateway for supported coding agents on GitHub
           Copilot.
         </p>
         <div class="footer-links">
-          <a href="https://github.com/lomux-org/lomux">Repository</a>
-          <a href="https://github.com/lomux-org/lomux/blob/main/README.md"
+          <a href="https://github.com/myty/modmux">Repository</a>
+          <a href="https://github.com/myty/modmux/blob/main/README.md"
           >README</a>
-          <a href="https://github.com/lomux-org/lomux/releases">Releases</a>
+          <a href="https://github.com/myty/modmux/releases">Releases</a>
         </div>
       </footer>
     </div>

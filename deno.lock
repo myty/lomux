@@ -206,6 +206,35 @@
       "jsr:@std/path@^1.1.4",
       "jsr:@std/toml@^1.0.11",
       "jsr:@std/yaml@^1.0.12"
-    ]
+    ],
+    "members": {
+      "cli": {
+        "dependencies": [
+          "jsr:@cliffy/ansi@1",
+          "jsr:@cliffy/keypress@1",
+          "jsr:@std/assert@1.0.19",
+          "jsr:@std/fmt@^1.0.9",
+          "jsr:@std/path@^1.1.4"
+        ]
+      },
+      "gateway": {
+        "dependencies": [
+          "jsr:@cliffy/ansi@1",
+          "jsr:@cross/service@^1.0.7",
+          "jsr:@std/assert@1.0.19",
+          "jsr:@std/fmt@^1.0.9",
+          "jsr:@std/path@^1.1.4",
+          "jsr:@std/toml@^1.0.11",
+          "jsr:@std/yaml@^1.0.12"
+        ]
+      },
+      "providers": {
+        "dependencies": [
+          "jsr:@std/assert@1.0.19",
+          "jsr:@std/fmt@^1.0.9",
+          "jsr:@std/path@^1.1.4"
+        ]
+      }
+    }
   }
 }

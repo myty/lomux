@@ -1,19 +1,12 @@
-# lomux
+# Modmux
 
-**Some of the most popular coding agents still miss GitHub Copilot.**
+Modmux is the model multiplexing layer for coding agents. It provides a unified,
+local interface for routing requests across multiple model providers and
+protocols. Built for reliability, clarity, and modern multi-agent workflows,
+Modmux normalizes differences between APIs so your agents can focus on logic—not
+plumbing.
 
-Cline, Codex, and Claude Code are great. But none of them let you use GitHub
-Copilot as a model provider directly. A lot of agentic coding tools already
-integrate with GitHub Copilot. Claude Code, Cline, and Codex still do not. lomux
-closes that gap with one reliable localhost path that speaks
-Anthropic-compatible and OpenAI-compatible protocols, backed entirely by your
-existing Copilot subscription.
-
-- Local-only on `127.0.0.1`
-- Explicit service controls, health checks, and status
-- Reversible agent configuration for supported tools
-
-Website: https://lomux-org.github.io/lomux/
+Website: https://myty.github.io/modmux/
 
 Migration guide: [MIGRATION.md](MIGRATION.md) Release notes:
 [CHANGELOG.md](CHANGELOG.md)
@@ -26,21 +19,21 @@ Migration guide: [MIGRATION.md](MIGRATION.md) Release notes:
   supported Anthropic-compatible flows
 - 📊 **Usage telemetry endpoint** — `GET /v1/usage` for aggregated request,
   status, and latency metrics
-- 🚀 **Background service** — `lomux start` / `lomux stop` / `lomux restart`
+- 🚀 **Background service** — `modmux start` / `modmux stop` / `modmux restart`
 - 🤖 **Multi-agent support** — Claude Code, Cline, and Codex
-- 🖥️ **Minimal TUI** — bare `lomux` opens a radio-toggle interface for batch
+- 🖥️ **Minimal TUI** — bare `modmux` opens a radio-toggle interface for batch
   configuration
 - 🔍 **Agent detection** — scans PATH and VS Code extension dirs to find
   installed agents
-- ♻️ **Reversible config** — every `lomux configure` is undone by
-  `lomux unconfigure`
+- ♻️ **Reversible config** — every `modmux configure` is undone by
+  `modmux unconfigure`
 - ⚡ **Stream support** — real-time streaming responses
 - 📦 **Multiple install methods** — npm, Deno/JSR, or direct binary
 
 ## How It Works
 
 ```
-Coding agent → lomux proxy (127.0.0.1:11434) → GitHub Copilot API
+Coding agent → Modmux proxy (127.0.0.1:11434) → GitHub Copilot API
                 │
                 ├── POST /v1/messages           (Anthropic)
                 ├── POST /v1/messages/count_tokens
@@ -51,11 +44,13 @@ Coding agent → lomux proxy (127.0.0.1:11434) → GitHub Copilot API
                 └── GET  /health
 ```
 
-1. **`lomux start`** — authenticates with GitHub and starts the background proxy
-2. **`lomux configure <agent>`** — writes the agent's config file to point at a
-   local lomux endpoint
+1. **`modmux start`** — authenticates with GitHub and starts the background
+   proxy
+2. **`modmux configure <agent>`** — writes the agent's config file to point at a
+   local Modmux endpoint
 3. The agent's API calls are translated and forwarded to GitHub Copilot
-4. You can inspect state with `lomux status`, `GET /health`, and `GET /v1/usage`
+4. You can inspect state with `modmux status`, `GET /health`, and
+   `GET /v1/usage`
 
 ## Installation
 
@@ -65,7 +60,7 @@ Coding agent → lomux proxy (127.0.0.1:11434) → GitHub Copilot API
 **Node.js ≥18 required**
 
 ```bash
-npm install -g lomux
+npm install -g @modmux/core
 ```
 
 The npm package automatically downloads the native binary for your platform:
@@ -86,7 +81,7 @@ The npm package automatically downloads the native binary for your platform:
 Clone the repository and install globally with a single command:
 
 ```bash
-git clone https://github.com/lomux-org/lomux.git && cd lomux
+git clone https://github.com/myty/modmux.git && cd modmux
 ```
 
 **With Deno:**
@@ -101,11 +96,11 @@ deno task install
 mise run install
 ```
 
-After installation, `lomux` is available in any terminal:
+After installation, `modmux` is available in any terminal:
 
 ```bash
-lomux --version
-# lomux v0.3.0
+modmux --version
+# Modmux v0.3.0
 ```
 
 </details>
@@ -117,7 +112,7 @@ lomux --version
 <summary>📖 JSR (Deno Runtime)</summary>
 
 ```bash
-deno install -A -g jsr:@lomux/lomux
+[Optional] deno install -A -g jsr:@modmux/cli
 ```
 
 </details>
@@ -126,7 +121,7 @@ deno install -A -g jsr:@lomux/lomux
 <summary>📖 Direct Binary Download</summary>
 
 Download platform-specific binaries from
-[GitHub Releases](https://github.com/lomux-org/lomux/releases).
+[GitHub Releases](https://github.com/myty/modmux/releases).
 
 </details>
 
@@ -136,22 +131,22 @@ Download platform-specific binaries from
 <summary>📖 TUI (recommended for first-time setup)</summary>
 
 ```bash
-lomux          # opens the interactive TUI
+modmux          # opens the interactive TUI
 ```
 
 ```
-lomux — Local AI Gateway
-──────────────────────────────────────────────
+modmux — Model Multiplexing Layer
+─────────────────────────────────────────────
 Status: Running on http://localhost:11434
 Copilot: Authenticated ✓
 
 Agents
-──────────────────────────────────────────────
+─────────────────────────────────────────────
 [x] Claude Code      detected
 [ ] Cline            installed
 [ ] Codex            installed
 
-──────────────────────────────────────────────
+─────────────────────────────────────────────
 Space: toggle   Enter: apply   q: quit
 ```
 
@@ -163,22 +158,22 @@ Keys: **Space** toggles selection, **Enter** applies, **↑/↓** moves cursor,
 <details>
 <summary>📖 CLI Commands</summary>
 
-| Command                                   | Description                                                 |
-| ----------------------------------------- | ----------------------------------------------------------- |
-| `lomux`                                   | Open the interactive TUI (on TTY) or print status (non-TTY) |
-| `lomux start`                             | Start the background proxy service                          |
-| `lomux stop`                              | Stop the background proxy service                           |
-| `lomux restart`                           | Restart the background proxy service                        |
-| `lomux status`                            | Print service and auth status                               |
-| `lomux configure <agent>`                 | Write config for a specific agent                           |
-| `lomux unconfigure <agent>`               | Revert config for a specific agent                          |
-| `lomux doctor`                            | Scan and report all agents' states                          |
-| `lomux models`                            | List available Copilot model IDs                            |
-| `lomux model-policy [compatible\|strict]` | Show or set model mapping policy                            |
-| `lomux install-service`                   | Register daemon with OS login service manager               |
-| `lomux uninstall-service`                 | Remove daemon from OS login service manager                 |
-| `lomux --help`                            | Show help                                                   |
-| `lomux --version`                         | Show version                                                |
+| Command                          | Description                                                 |
+| -------------------------------- | ----------------------------------------------------------- |
+| `modmux`                         | Open the interactive TUI (on TTY) or print status (non-TTY) |
+| `modmux start`                   | Start the background proxy service                          |
+| `modmux stop`                    | Stop the background proxy service                           |
+| `modmux restart`                 | Restart the background proxy service                        |
+| `modmux status`                  | Print service and auth status                               |
+| `modmux configure <agent>`       | Write config for a specific agent                           |
+| `modmux unconfigure <agent>`     | Revert config for a specific agent                          |
+| `modmux doctor`                  | Scan and report all agents' states                          |
+| `modmux models`                  | List available Copilot model IDs                            |
+| `modmux model-policy [compatible | strict]`                                                    |
+| `modmux install-service`         | Register daemon with OS login service manager               |
+| `modmux uninstall-service`       | Remove daemon from OS login service manager                 |
+| `modmux --help`                  | Show help                                                   |
+| `modmux --version`               | Show version                                                |
 
 </details>
 
@@ -186,42 +181,31 @@ Keys: **Space** toggles selection, **Enter** applies, **↑/↓** moves cursor,
 <summary>🚀 Quick Start</summary>
 
 ```bash
-# 1. Install lomux
-npm install -g lomux
+# 1. Install Modmux
+npm install -g @modmux/core
 
 # 2. Start the proxy (authenticates with GitHub Copilot on first run)
-lomux start
+modmux start
 
 # 3. Configure an agent
-lomux configure claude-code
+modmux configure claude-code
 
 # 4. Check what's running
-lomux doctor
+modmux doctor
 
 # 5. (Optional) Register as a login service
-lomux install-service
+modmux install-service
 
 # To remove the login service later:
-# lomux uninstall-service
+# modmux uninstall-service
 ```
 
 </details>
 
-## Why The Name lomux
-
-lomux is built from two ideas that define the product:
-
-- **lo**: everything runs on localhost and stays local-first by design.
-- **mux**: this tool multiplexes multiple coding agents through one local
-  gateway.
-
-The result is a short, memorable command that reflects what the software does:
-stable routing through one visible control point.
-
 <details>
 <summary>📖 Usage Metrics API</summary>
 
-lomux exposes a local metrics snapshot endpoint:
+Modmux exposes a local metrics snapshot endpoint:
 
 ```bash
 curl http://127.0.0.1:11434/v1/usage
@@ -252,7 +236,7 @@ Response shape:
 }
 ```
 
-Persistence is optional and configurable via `~/.lomux/config.json`:
+Persistence is optional and configurable via `~/.modmux/config.json`:
 
 ```json
 {
@@ -280,16 +264,11 @@ Persistence is optional and configurable via `~/.lomux/config.json`:
 ## Architecture
 
 ```
-src/
+modmux/
 ├── cli/              # Command-line interface (main.ts)
-├── server/           # HTTP proxy (router, OpenAI/Anthropic translation)
-├── service/          # Daemon lifecycle + status
-├── agents/           # Registry, detector, config writers, model map
-├── tui/              # Renderer and raw-mode input
-├── auth/             # GitHub OAuth device flow
-├── copilot/          # GitHub Copilot API client
-├── config/           # ~/.lomux/config.json store
-└── lib/              # Shared utilities (log, process, errors, token)
+├── gateway/          # HTTP proxy (router, OpenAI/Anthropic translation)
+├── providers/        # Model backend integrations (Copilot)
+└── site/             # Website
 ```
 
 ## Prerequisites
@@ -300,7 +279,7 @@ src/
 
 ```bash
 # Clone and run quality checks
-git clone https://github.com/lomux-org/lomux.git && cd lomux
+git clone https://github.com/myty/modmux.git && cd modmux
 deno task quality
 
 # Run in development mode
@@ -326,23 +305,23 @@ deno task compile
 <details>
 <summary>📖 "Port already in use"</summary>
 
-- lomux automatically scans for an available port starting from 11434
-- Check `lomux status` to see the actual port in use
+- Modmux automatically scans for an available port starting from 11434
+- Check `modmux status` to see the actual port in use
 
 </details>
 
 <details>
 <summary>🔧 "Agent is misconfigured"</summary>
 
-- Run `lomux unconfigure <agent>` then `lomux configure <agent>` again
-- Run `lomux doctor` for a full status report
+- Run `modmux unconfigure <agent>` then `modmux configure <agent>` again
+- Run `modmux doctor` for a full status report
 
 </details>
 
 <details>
 <summary>📖 macOS "Cannot open" error (binary download)</summary>
 
-- Run `xattr -d com.apple.quarantine lomux` to remove quarantine
+- Run `xattr -d com.apple.quarantine modmux` to remove quarantine
 
 </details>
 

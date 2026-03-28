@@ -35,7 +35,7 @@ Deno.test(
     ignore: Deno.build.os !== "darwin" && Deno.build.os !== "linux",
   },
   async () => {
-    const home = await Deno.makeTempDir({ prefix: "lomux_factory_test_" });
+    const home = await Deno.makeTempDir({ prefix: "coco_factory_test_" });
     try {
       const installed = await getServiceManager({ home }).isInstalled();
       assertEquals(installed, false);

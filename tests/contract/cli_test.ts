@@ -3,14 +3,14 @@ import { assertEquals, assertStringIncludes } from "@std/assert";
 const CLI_PATH = "./src/cli/main.ts";
 
 Deno.test({
-  name: "CLI --help displays Lomux help",
+  name: "CLI --help displays Coco help",
   fn() {
     const process = new Deno.Command(Deno.execPath(), {
       args: ["run", "--allow-all", CLI_PATH, "--help"],
     }).outputSync();
     const output = new TextDecoder().decode(process.stdout);
 
-    assertStringIncludes(output, "Lomux");
+    assertStringIncludes(output, "Coco");
     assertStringIncludes(output, "--help");
     assertStringIncludes(output, "--version");
     assertStringIncludes(output, "start");
@@ -19,14 +19,14 @@ Deno.test({
 });
 
 Deno.test({
-  name: "CLI --version displays Lomux version",
+  name: "CLI --version displays Coco version",
   fn() {
     const process = new Deno.Command(Deno.execPath(), {
       args: ["run", "--allow-all", CLI_PATH, "--version"],
     }).outputSync();
     const output = new TextDecoder().decode(process.stdout);
 
-    assertStringIncludes(output, "Lomux v");
+    assertStringIncludes(output, "Coco v");
   },
 });
 
@@ -59,7 +59,7 @@ Deno.test({
       args: ["run", "--allow-all", CLI_PATH, "-h"],
     }).outputSync();
     const output = new TextDecoder().decode(process.stdout);
-    assertStringIncludes(output, "Lomux");
+    assertStringIncludes(output, "Coco");
   },
 });
 
@@ -70,7 +70,7 @@ Deno.test({
       args: ["run", "--allow-all", CLI_PATH, "-v"],
     }).outputSync();
     const output = new TextDecoder().decode(process.stdout);
-    assertStringIncludes(output, "Lomux v");
+    assertStringIncludes(output, "Coco v");
   },
 });
 

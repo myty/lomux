@@ -1,0 +1,17 @@
+{
+  "name": "@modmux/providers",
+  "version": "0.3.0",
+  "license": "MIT",
+  "exports": {
+    ".": "./src/mod.ts"
+  },
+  "compilerOptions": {
+    "lib": ["deno.window"],
+    "strict": true
+  },
+  "imports": {
+    "@std/assert": "jsr:@std/assert@1.0.19",
+    "@std/fmt": "jsr:@std/fmt@^1.0.9",
+    "@std/path": "jsr:@std/path@^1.1.4"
+  }
+}
