@@ -70,6 +70,9 @@ async function isProcessAlive(pid: number): Promise<boolean> {
       const { code } = await new Deno.Command("powershell", {
         args: [
           "-NoProfile",
+          "-NonInteractive",
+          "-WindowStyle",
+          "Hidden",
           "-Command",
           `Get-Process -Id ${pid} -ErrorAction SilentlyContinue`,
         ],
@@ -119,16 +122,33 @@ async function stopRunningDaemon(): Promise<number | null> {
 /**
  * Restarts the modmux daemon using the newly installed binary.
  * Spawns detached so the install script can exit cleanly.
+ * On Windows uses PowerShell Start-Process to avoid a console window popup.
  */
 function restartDaemon(binaryPath: string): void {
   try {
-    new Deno.Command(binaryPath, {
-      args: ["start"],
-      stdin: "null",
-      stdout: "null",
-      stderr: "null",
-      detached: true,
-    }).spawn().unref();
+    if (Deno.build.os === "windows") {
+      const esc = (s: string) => s.replace(/'/g, "''");
+      new Deno.Command("powershell", {
+        args: [
+          "-NonInteractive",
+          "-WindowStyle",
+          "Hidden",
+          "-Command",
+          `Start-Process -FilePath '${esc(binaryPath)}' -ArgumentList 'start' -WindowStyle Hidden`,
+        ],
+        stdin: "null",
+        stdout: "null",
+        stderr: "null",
+      }).spawn().unref();
+    } else {
+      new Deno.Command(binaryPath, {
+        args: ["start"],
+        stdin: "null",
+        stdout: "null",
+        stderr: "null",
+        detached: true,
+      }).spawn().unref();
+    }
   } catch {
     // Non-fatal — daemon will need to be started manually
   }
@@ -228,6 +248,9 @@ async function addToWindowsUserPath(installDir: string): Promise<boolean> {
   const getCmd = new Deno.Command("powershell", {
     args: [
       "-NoProfile",
+      "-NonInteractive",
+      "-WindowStyle",
+      "Hidden",
       "-Command",
       "[Environment]::GetEnvironmentVariable('PATH','User')",
     ],
@@ -250,6 +273,9 @@ async function addToWindowsUserPath(installDir: string): Promise<boolean> {
   const setCmd = new Deno.Command("powershell", {
     args: [
       "-NoProfile",
+      "-NonInteractive",
+      "-WindowStyle",
+      "Hidden",
       "-Command",
       `[Environment]::SetEnvironmentVariable('PATH','${newPath}','User')`,
     ],

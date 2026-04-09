@@ -204,7 +204,7 @@ class WindowsCredentialStore implements TokenStore {
 
   private async runPS(script: string): Promise<string> {
     const { success, stdout } = await new Deno.Command("powershell", {
-      args: ["-NonInteractive", "-Command", script],
+      args: ["-NonInteractive", "-WindowStyle", "Hidden", "-Command", script],
       stdout: "piped",
       stderr: "piped",
     }).output();

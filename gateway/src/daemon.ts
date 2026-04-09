@@ -87,6 +87,50 @@ function findFreePort(preferred: number): number {
 }
 
 // ---------------------------------------------------------------------------
+// Cross-platform detached spawn
+// ---------------------------------------------------------------------------
+
+/**
+ * Spawn a detached background process and return its PID.
+ *
+ * On Windows, Deno-compiled binaries are console-subsystem executables.
+ * Spawning them with `detached: true` causes the Deno runtime to call
+ * `AllocConsole()` (it has no inherited console), which flashes a visible
+ * terminal window. Work around this by routing through PowerShell
+ * `Start-Process -WindowStyle Hidden`, which sets SW_HIDE in STARTUPINFO
+ * so the console window is never shown.
+ */
+async function spawnDetached(exe: string, args: string[]): Promise<number> {
+  if (Deno.build.os === "windows") {
+    const esc = (s: string) => s.replace(/'/g, "''");
+    const argList = args.map((a) => `'${esc(a)}'`).join(",");
+    const script = args.length > 0
+      ? `(Start-Process -FilePath '${esc(exe)}' -ArgumentList ${argList} -WindowStyle Hidden -PassThru).Id`
+      : `(Start-Process -FilePath '${esc(exe)}' -WindowStyle Hidden -PassThru).Id`;
+    const { success, stdout } = await new Deno.Command("powershell", {
+      args: ["-NonInteractive", "-WindowStyle", "Hidden", "-Command", script],
+      stdin: "null",
+      stdout: "piped",
+      stderr: "null",
+    }).output();
+    if (!success) throw new Error("Failed to spawn daemon via PowerShell");
+    const pid = parseInt(new TextDecoder().decode(stdout).trim(), 10);
+    if (isNaN(pid)) throw new Error("Could not read daemon PID from PowerShell");
+    return pid;
+  }
+
+  const child = new Deno.Command(exe, {
+    args,
+    stdin: "null",
+    stdout: "null",
+    stderr: "null",
+    detached: true,
+  }).spawn();
+  child.unref();
+  return child.pid;
+}
+
+// ---------------------------------------------------------------------------
 // Public daemon API
 // ---------------------------------------------------------------------------
 
@@ -123,21 +167,13 @@ export async function startDaemon(): Promise<StartResult> {
 
   // Self-spawn current CLI entrypoint with --daemon
   const self = Deno.execPath();
-  const child = new Deno.Command(self, {
-    args: daemonSpawnArgs(self),
-    stdin: "null",
-    stdout: "null",
-    stderr: "null",
-    detached: true,
-  }).spawn();
-
-  await writePid(child.pid);
-  child.unref();
+  const pid = await spawnDetached(self, daemonSpawnArgs(self));
+  await writePid(pid);
 
   // Avoid reporting success when the child exits immediately (common spawn issue).
   for (let i = 0; i < 10; i++) {
     await new Promise((resolve) => setTimeout(resolve, 100));
-    if (await isProcessAlive(child.pid)) {
+    if (await isProcessAlive(pid)) {
       return { already: false, port };
     }
   }
