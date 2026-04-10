@@ -6,6 +6,7 @@ on:
       - main
     paths:
       - site/**
+      - site-redirect/**
       - .github/workflows/pages.yml
   workflow_dispatch:
 
@@ -13,11 +14,23 @@ permissions:
   contents: read
 
 concurrency:
-  group: github-pages
+  group: pages
   cancel-in-progress: true
 
 jobs:
-  build:
+  deploy-cloudflare:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy site --project-name=modmux --branch=main
+
+  build-redirect:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -25,19 +38,22 @@ jobs:
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
 
-      - name: Upload GitHub Pages artifact
+      - name: Upload redirect artifact
         uses: actions/upload-pages-artifact@v4
         with:
-          path: site
+          path: site-redirect
 
-  deploy:
-    needs: build
+  deploy-redirect:
+    needs: build-redirect
     runs-on: ubuntu-latest
     permissions:
       contents: read
       pages: write
       id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - name: Deploy to GitHub Pages
+      - name: Deploy redirect to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
