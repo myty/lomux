@@ -4,10 +4,7 @@ Local gateway that routes requests between coding agents and GitHub Copilot.
 OpenAI and Anthropic compatible endpoints, reversible configuration, zero
 external dependencies.
 
-Website: https://myty.github.io/modmux/
-
-Migration guide: [MIGRATION.md](MIGRATION.md) Release notes:
-[CHANGELOG.md](CHANGELOG.md)
+Website: https://modmux.dev/
 
 ## Features
 
@@ -113,7 +110,7 @@ modmux          # opens the interactive TUI
 ```
 
 ```
-modmux — Model Multiplexing Layer
+modmux — GitHub Copilot gateway
 ─────────────────────────────────────────────
 Status: Running on http://localhost:11435
 Copilot: Authenticated ✓
@@ -147,7 +144,7 @@ Keys: **Space** toggles selection, **Enter** applies, **↑/↓** moves cursor,
 | `modmux unconfigure <agent>`     | Revert config for a specific agent                          |
 | `modmux doctor`                  | Scan and report all agents' states                          |
 | `modmux models`                  | List available Copilot model IDs                            |
-| `modmux model-policy [compatible | strict]`                                                    |
+| `modmux model-policy <compatible\|strict>` | Set model compatibility policy                              |
 | `modmux install-service`         | Register daemon with OS login service manager               |
 | `modmux uninstall-service`       | Remove daemon from OS login service manager                 |
 | `modmux --help`                  | Show help                                                   |

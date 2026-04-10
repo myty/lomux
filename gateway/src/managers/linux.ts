@@ -37,7 +37,7 @@ function logPath(home: string): string {
 
 function generateUnit(binaryPath: string, log: string): string {
   return `[Unit]
-Description=Modmux Model Multiplexing Layer
+Description=Modmux — GitHub Copilot gateway for coding agents
 After=network.target
 
 [Service]

@@ -33,7 +33,7 @@ const CANONICAL_CLI_NAME = "modmux";
 
 function showHelp() {
   console.log(`
-${APP_NAME} - Model Multiplexing Layer
+${APP_NAME} - GitHub Copilot gateway
 
 Usage: ${CANONICAL_CLI_NAME} [COMMAND] [OPTIONS]
 
