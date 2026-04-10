@@ -6,7 +6,7 @@
     <title>Modmux | The Model Multiplexing Layer for Coding Agents</title>
     <meta
       name="description"
-      content="Modmux provides a unified, local interface for routing requests across multiple model providers and protocols. Built for reliability, clarity, and modern multi-agent workflows."
+      content="Local gateway that routes requests between coding agents and GitHub Copilot. OpenAI and Anthropic compatible endpoints, reversible configuration, zero external dependencies."
     />
 
     <!-- Open Graph -->
@@ -16,7 +16,7 @@
     <meta property="og:title" content="Modmux | The Model Multiplexing Layer for Coding Agents" />
     <meta
       property="og:description"
-      content="Modmux provides a unified, local interface for routing requests across multiple model providers and protocols. Built for reliability, clarity, and modern multi-agent workflows."
+      content="Local gateway that routes requests between coding agents and GitHub Copilot. OpenAI and Anthropic compatible endpoints, reversible configuration, zero external dependencies."
     />
     <meta property="og:image" content="https://modmux.dev/og.png" />
     <meta property="og:image:width" content="1200" />
@@ -28,7 +28,7 @@
     <meta name="twitter:title" content="Modmux | The Model Multiplexing Layer for Coding Agents" />
     <meta
       name="twitter:description"
-      content="Modmux provides a unified, local interface for routing requests across multiple model providers and protocols. Built for reliability, clarity, and modern multi-agent workflows."
+      content="Local gateway that routes requests between coding agents and GitHub Copilot. OpenAI and Anthropic compatible endpoints, reversible configuration, zero external dependencies."
     />
     <meta name="twitter:image" content="https://modmux.dev/og.png" />
     <meta name="twitter:image:alt" content="Modmux — The model routing layer for coding agents" />
@@ -69,8 +69,8 @@
             </h1>
             <p class="hero-body">
               Local gateway that routes requests between coding agents and
-              GitHub Copilot. OpenAI-compatible endpoints, reversible
-              configuration, zero external dependencies.
+              GitHub Copilot. OpenAI and Anthropic compatible endpoints,
+              reversible configuration, zero external dependencies.
             </p>
             <div class="hero-actions">
               <a class="button button-primary" href="#install"
@@ -208,9 +208,8 @@
                 <li>Codex</li>
               </ul>
               <p>
-                Modmux is intentionally narrow: it stays focused on being a
-                stable, reliable, predictable local gateway rather than becoming
-                another chat client or an agent runtime of its own.
+                Modmux stays focused on the gateway problem: not a chat client,
+                not an agent runtime.
               </p>
             </div>
           </div>
@@ -323,7 +322,7 @@
         <section id="agents" class="section reveal">
           <div class="section-heading narrow">
             <p class="eyebrow">Supported Agents</p>
-            <h2>Support is explicit, current, and built into the product.</h2>
+            <h2>Three agents, built in.</h2>
           </div>
           <div class="card-grid three-up">
             <article class="agent-card">
@@ -375,10 +374,8 @@
             </div>
             <div class="demo-copy">
               <p>
-                The TUI keeps your entire operational state visible: daemon
-                status, authentication, and agent configuration in one terminal
-                view. No hidden state, no guesswork—just run `modmux` and see
-                everything.
+                The TUI shows daemon status, authentication, and agent
+                configuration in one terminal view.
               </p>
             </div>
           </div>
@@ -476,9 +473,7 @@
         <section id="status" class="section reveal reveal-delay-1">
           <div class="section-heading">
             <p class="eyebrow">Status</p>
-            <h2>
-              Shipping now with a narrow scope and a practical operating model.
-            </h2>
+            <h2>v0.3.0 — local gateway, narrow scope.</h2>
           </div>
           <div class="status-grid">
             <article class="status-card">

@@ -1,8 +1,7 @@
 # Anthropic Proxy API
 
 The `/v1/messages` endpoint provides an Anthropic-compatible interface for chat
-completions, allowing Claude-based agents to communicate with GitHub Copilot
-seamlessly.
+completions, routing requests from Claude-based agents through GitHub Copilot.
 
 ## Endpoint
 

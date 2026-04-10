@@ -1,40 +1,24 @@
 # API Reference
 
-Modmux provides a comprehensive HTTP API that acts as a proxy between AI code
-completion agents and GitHub Copilot. The API offers both Anthropic-compatible
-and OpenAI-compatible endpoints, allowing seamless integration with various AI
-agents.
+Modmux exposes Anthropic-compatible and OpenAI-compatible HTTP endpoints. All
+requests are proxied to GitHub Copilot with automatic token management.
 
 ## Base URL
-
-When running locally (default):
 
 ```
 http://localhost:11435
 ```
 
-The default port can be configured and Modmux will automatically scan for
-available ports if the default is in use.
+Modmux scans for an available port starting at 11435 if the default is occupied.
 
 ## Authentication
 
-All API requests require a valid GitHub Copilot token. Modmux handles token
-management automatically through GitHub OAuth device flow authentication.
-
-To authenticate:
-
-```bash
-modmux auth
-# Follow the device flow prompts
-```
-
-Once authenticated, tokens are automatically included in all proxied requests to
-GitHub Copilot.
+Modmux manages GitHub Copilot tokens automatically. Authenticate once with
+`modmux start` and tokens are included in all proxied requests.
 
 ## Content Types
 
-All API endpoints expect and return JSON with the content type
-`application/json`.
+All endpoints accept and return `application/json`.
 
 ## Error Handling
 
@@ -155,10 +139,9 @@ All requests are tracked for usage metrics with the following dimensions:
 Access usage data via the
 [/v1/usage endpoint](./usage-metrics.md#usage-endpoint).
 
-## Next Steps
+## Endpoint Documentation
 
-- [Anthropic Proxy API](./anthropic-proxy.md) - `/v1/messages` endpoint
-- [OpenAI Proxy API](./openai-proxy.md) - `/v1/chat/completions` and
-  `/v1/models`
-- [Usage Metrics API](./usage-metrics.md) - `/v1/usage` and `/v1/responses`
-- [Token Counting API](./token-counting.md) - `/v1/messages/count_tokens`
+- [Anthropic Proxy](./anthropic-proxy.md) — `/v1/messages`
+- [OpenAI Proxy](./openai-proxy.md) — `/v1/chat/completions` and `/v1/models`
+- [Usage Metrics](./usage-metrics.md) — `/v1/usage` and `/v1/responses`
+- [Token Counting](./token-counting.md) — `/v1/messages/count_tokens`

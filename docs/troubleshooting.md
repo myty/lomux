@@ -1,8 +1,6 @@
 # Troubleshooting Guide
 
-This guide provides solutions for common Modmux issues, organized by setup phase
-and problem type. Use the diagnostic commands to identify your issue, then
-follow the appropriate solution.
+Solutions organized by setup phase. Start with diagnostics to identify your issue.
 
 ## Quick Diagnostics
 
@@ -855,39 +853,10 @@ curl -v http://127.0.0.1:11435/health
 
 If this guide doesn't solve your issue:
 
-1. **Check GitHub Issues**:
-   [github.com/modmux/modmux/issues](https://github.com/modmux/modmux/issues)
-2. **Create Detailed Bug Report** with:
-   - Output of `modmux status`
-   - Output of `modmux doctor`
-   - Recent log entries (`tail -50 ~/.modmux/modmux.log`)
-   - Steps to reproduce
-   - Operating system and version
-3. **Include Configuration** (redact sensitive info):
-   - `~/.modmux/config.json`
-   - Agent config files (if relevant)
+1. Check [GitHub Issues](https://github.com/modmux/modmux/issues)
+2. Open a bug report with:
+   - Output of `modmux status` and `modmux doctor`
+   - Recent log entries: `tail -50 ~/.modmux/modmux.log`
+   - Steps to reproduce and OS version
 
-### Useful Information for Bug Reports
-
-```bash
-# System information
-uname -a
-modmux --version
-
-# Service state
-modmux status
-modmux doctor
-
-# Network state
-lsof -i :11435  # macOS/Linux
-netstat -ano | findstr :11435  # Windows
-
-# Recent logs
-tail -50 ~/.modmux/modmux.log
-
-# Configuration (redact tokens)
-cat ~/.modmux/config.json
-```
-
-Remember to **never share authentication tokens** or sensitive information in
-bug reports!
+Never share authentication tokens in bug reports.

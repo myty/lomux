@@ -1,8 +1,7 @@
 # OpenAI Proxy API
 
-The OpenAI-compatible endpoints provide seamless integration with agents
-expecting OpenAI's API format. Modmux translates between OpenAI and GitHub
-Copilot formats automatically.
+The OpenAI-compatible endpoints accept requests in OpenAI format and translate
+them to GitHub Copilot automatically.
 
 ## Chat Completions
 

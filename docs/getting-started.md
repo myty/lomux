@@ -1,9 +1,5 @@
 # Getting Started with Modmux
 
-This guide walks you through setting up Modmux from installation to first
-successful API call. Follow each step and use the verification checkpoints to
-ensure everything is working correctly.
-
 ## Prerequisites
 
 Before starting, ensure you have:
@@ -31,22 +27,15 @@ deno task install
 2. Extract and move the binary to your PATH
 3. Make it executable (macOS/Linux): `chmod +x modmux`
 
-### Verification Checkpoint ✓
-
-Test that Modmux is installed correctly:
+### Verify installation
 
 ```bash
 modmux --version
 ```
 
-**Expected output:**
+Expected output: `Modmux v0.2.0`
 
-```
-Modmux v0.2.0
-```
-
-If this fails, check that the binary is in your PATH and try the alternative
-installation methods.
+If this fails, check that the install directory is in your PATH.
 
 ## Step 2: Authentication
 
@@ -82,23 +71,21 @@ Authentication successful!
 Modmux is running on http://localhost:11435
 ```
 
-### Verification Checkpoint ✓
-
-Check that authentication worked:
+### Verify authentication
 
 ```bash
 modmux status
 ```
 
-**Expected output:**
+Expected output:
 
 ```
-Service:       running (PID 12345) on port 11435
+Service:        running (PID 12345) on port 11435
 Authentication: valid (expires in 29 days)
-Agents:        none configured
+Agents:         none configured
 ```
 
-If authentication failed, you'll see an error. Common issues:
+Common issues:
 
 - **No GitHub Copilot subscription** - Verify your subscription at
   github.com/settings/copilot
@@ -150,15 +137,13 @@ modmux configure cline    # For Cline
 modmux configure codex    # For Codex
 ```
 
-### Verification Checkpoint ✓
-
-Verify the agent is configured:
+### Verify configuration
 
 ```bash
 modmux doctor
 ```
 
-**Expected output:**
+Expected output:
 
 ```
 claude-code     installed    configured ✓
@@ -226,51 +211,13 @@ If you configured Claude Code, test it by:
 3. **Send a test message** like "Hello, are you working?"
 4. **Verify response** comes through successfully
 
-### Verification Checkpoint ✓
-
-Check usage metrics to confirm requests are flowing:
+### Verify requests are flowing
 
 ```bash
 curl http://localhost:11435/v1/usage
 ```
 
-**Expected output:**
-
-```json
-{
-  "endpoints": {
-    "/v1/chat/completions": {
-      "requests": 1,
-      "totalDuration": 1250.5,
-      "averageDuration": 1250.5,
-      "statusCodes": {
-        "200": 1
-      }
-    }
-  },
-  "agents": {
-    "claude-code": {
-      "requests": 1,
-      "totalDuration": 1250.5,
-      "averageDuration": 1250.5,
-      "statusCodes": {
-        "200": 1
-      }
-    }
-  },
-  "overall": {
-    "requests": 1,
-    "totalDuration": 1250.5,
-    "averageDuration": 1250.5,
-    "statusCodes": {
-      "200": 1
-    }
-  }
-}
-```
-
-If you see request counts and successful status codes (200), everything is
-working!
+If you see request counts with `200` status codes, everything is working.
 
 ## Step 5: Explore Available Models
 
@@ -315,23 +262,6 @@ curl -X POST http://localhost:11435/v1/messages \
     "max_tokens": 150
   }'
 ```
-
-## Optional: Interactive TUI
-
-Modmux includes a text-based user interface for easy agent management:
-
-```bash
-modmux
-```
-
-**TUI Controls:**
-
-- **↑/↓** - Navigate between agents
-- **Space** - Toggle agent configuration
-- **Enter** - Apply changes
-- **Ctrl+C** - Exit
-
-Use this to quickly enable/disable agents without remembering command syntax.
 
 ## Common Next Steps
 
@@ -433,24 +363,7 @@ curl -X POST http://localhost:11435/v1/chat/completions \
   -d '{"model": "gpt-4o", "messages": [{"role": "user", "content": "test"}], "max_tokens": 10}'
 ```
 
-## Success! 🎉
+---
 
-You now have Modmux running and configured! Your AI agents can communicate with
-GitHub Copilot through the proxy service.
-
-### What You've Accomplished
-
-✅ **Installed Modmux** and verified it's working ✅ **Authenticated** with
-GitHub Copilot ✅ **Configured at least one agent** to use the proxy ✅ **Tested
-the API** with successful requests ✅ **Verified usage tracking** is working
-
-### Next Steps
-
-- **Integrate with your workflow** - Use your configured agents normally
-- **Monitor usage** - Keep an eye on the `/v1/usage` endpoint
-- **Explore the API** - Check out the [full API documentation](./api/README.md)
-- **Customize configuration** - See
-  [Advanced Configuration](./advanced-configuration.md)
-
-Need help? Check the [Troubleshooting Guide](./troubleshooting.md) or report
-issues on GitHub.
+For more detail, see the [API documentation](./api/README.md) or the
+[Troubleshooting Guide](./troubleshooting.md).

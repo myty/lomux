@@ -1,10 +1,8 @@
 # Modmux
 
-Modmux is the model multiplexing layer for coding agents. It provides a unified,
-local interface for routing requests across multiple model providers and
-protocols. Built for reliability, clarity, and modern multi-agent workflows,
-Modmux normalizes differences between APIs so your agents can focus on logic—not
-plumbing.
+Local gateway that routes requests between coding agents and GitHub Copilot.
+OpenAI and Anthropic compatible endpoints, reversible configuration, zero
+external dependencies.
 
 Website: https://myty.github.io/modmux/
 
@@ -15,19 +13,16 @@ Migration guide: [MIGRATION.md](MIGRATION.md) Release notes:
 
 - 🔗 **Anthropic + OpenAI compatible** — `/v1/messages` and
   `/v1/chat/completions` endpoints, plus `/v1/responses`
-- 🧮 **Token counting endpoint** — `POST /v1/messages/count_tokens` for
-  supported Anthropic-compatible flows
-- 📊 **Usage telemetry endpoint** — `GET /v1/usage` for aggregated request,
-  status, and latency metrics
+- 🧮 **Token counting** — `POST /v1/messages/count_tokens`
+- 📊 **Usage metrics** — `GET /v1/usage` for request, status, and latency data
 - 🚀 **Background service** — `modmux start` / `modmux stop` / `modmux restart`
 - 🤖 **Multi-agent support** — Claude Code, Cline, and Codex
-- 🖥️ **Minimal TUI** — bare `modmux` opens a radio-toggle interface for batch
+- 🖥️ **Minimal TUI** — bare `modmux` opens a toggle interface for agent
   configuration
-- 🔍 **Agent detection** — scans PATH and VS Code extension dirs to find
-  installed agents
+- 🔍 **Agent detection** — scans PATH and VS Code extensions
 - ♻️ **Reversible config** — every `modmux configure` is undone by
   `modmux unconfigure`
-- ⚡ **Stream support** — real-time streaming responses
+- ⚡ **Stream support** — streaming responses
 - 📦 **Multiple install methods** — from source or direct binary
 
 ## How It Works
@@ -44,13 +39,11 @@ Coding agent → Modmux proxy (127.0.0.1:11435) → GitHub Copilot API
                 └── GET  /health
 ```
 
-1. **`modmux start`** — authenticates with GitHub and starts the background
-   proxy
-2. **`modmux configure <agent>`** — writes the agent's config file to point at a
-   local Modmux endpoint
-3. The agent's API calls are translated and forwarded to GitHub Copilot
-4. You can inspect state with `modmux status`, `GET /health`, and
-   `GET /v1/usage`
+1. **`modmux start`** — authenticates with GitHub and starts the proxy
+2. **`modmux configure <agent>`** — points the agent's config at the local
+   Modmux endpoint
+3. Agent API calls are translated and forwarded to GitHub Copilot
+4. Inspect state with `modmux status`, `GET /health`, or `GET /v1/usage`
 
 ## Installation
 
@@ -181,9 +174,6 @@ modmux doctor
 
 # 5. (Optional) Register as a login service
 modmux install-service
-
-# To remove the login service later:
-# modmux uninstall-service
 ```
 
 </details>
@@ -262,6 +252,8 @@ modmux/
 - **GitHub Copilot subscription** — Individual, Business, or Enterprise
 
 ## Development
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for project structure, design principles, code style, and full command reference.
 
 ```bash
 # Clone and run quality checks
