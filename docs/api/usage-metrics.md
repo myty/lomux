@@ -403,18 +403,38 @@ Usage metrics can be configured via the Modmux configuration file:
 ```json
 {
   "usageMetrics": {
-    "enabled": true,
-    "retentionHours": 24
+    "persist": false,
+    "snapshotIntervalMs": 60000,
+    "filePath": null
+  },
+  "githubUsage": {
+    "backend": "external-cli",
+    "autoStart": true,
+    "preferredPort": 4321,
+    "cliUrl": null
   }
 }
 ```
 
 ### Configuration Options
 
-| Field            | Type    | Default | Description                   |
-| ---------------- | ------- | ------- | ----------------------------- |
-| `enabled`        | boolean | true    | Enable usage tracking         |
-| `retentionHours` | number  | 24      | How long to keep metrics data |
+| Field                             | Type                     | Default    | Description                                                 |
+| --------------------------------- | ------------------------ | ---------- | ----------------------------------------------------------- |
+| `usageMetrics.persist`            | boolean                  | `false`    | Persist periodic usage snapshots to disk                    |
+| `usageMetrics.snapshotIntervalMs` | number                   | `60000`    | Snapshot interval when persistence is enabled               |
+| `usageMetrics.filePath`           | string \| null           | `null`     | Override the default snapshot file path                     |
+| `githubUsage.backend`             | `disabled\|external-cli` | `disabled` | Backend used for real GitHub Copilot quota retrieval        |
+| `githubUsage.autoStart`           | boolean                  | `false`    | Auto-start and manage a headless Copilot CLI sidecar        |
+| `githubUsage.preferredPort`       | number                   | `4321`     | Preferred local port for the managed sidecar                |
+| `githubUsage.cliUrl`              | string \| null           | `null`     | Fixed external Copilot CLI server URL when autoStart is off |
+
+When `githubUsage.backend` is `external-cli`, `/v1/usage` includes
+`github_copilot.status` with these meanings:
+
+- `authenticated` — real Copilot quota data was fetched successfully
+- `unauthenticated` — the Modmux GitHub token is missing or invalid
+- `error` — the external quota backend is not configured, not reachable, or
+  failed
 
 ## Next Steps
 

@@ -103,6 +103,35 @@ curl -X POST http://127.0.0.1:11435/v1/chat/completions \
 
 If `modmux status` shows a different port, use that port instead.
 
+## `Usage: Not available (error)`
+
+This usually means the GitHub quota backend is not configured, the managed
+Copilot sidecar failed to start, or a manually configured external server is not
+reachable.
+
+For the managed sidecar path, confirm `~/.modmux/config.json` includes:
+
+```json
+{
+  "githubUsage": {
+    "backend": "external-cli",
+    "autoStart": true,
+    "preferredPort": 4321
+  }
+}
+```
+
+Then restart Modmux and inspect the log:
+
+```bash
+modmux stop
+modmux start
+tail -50 ~/.modmux/modmux.log
+```
+
+If you are using a manual external Copilot CLI server instead, make sure that
+server is already listening on the configured `githubUsage.cliUrl`.
+
 ## Reset the local setup
 
 If the state is unclear, restart from a clean local loop:
