@@ -91,6 +91,11 @@ jobs:
           else
             echo "prerelease=false" >> "$GITHUB_OUTPUT"
           fi
+      - name: Generate changelog
+        id: changelog
+        uses: loopwerk/tag-changelog@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
       - name: Generate release manifest
         run: |
           VERSION=$(python3 -c "import sys,json; print(json.load(open('deno.json'))['version'])")
@@ -128,5 +133,5 @@ jobs:
           files: |
             modmux-*
             release-manifest.json
-          generate_release_notes: true
+          body: ${{ steps.changelog.outputs.changes }}
           prerelease: ${{ steps.detect.outputs.prerelease == 'true' }}
