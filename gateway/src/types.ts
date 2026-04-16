@@ -203,7 +203,7 @@ export function validateRequest(req: unknown): {
 
 export function generateMessageId(): string {
   const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
-  let id = "msg_coco_";
+  let id = "msg_modmux_";
   for (let i = 0; i < 12; i++) {
     id += chars[Math.floor(Math.random() * chars.length)];
   }

@@ -32,7 +32,7 @@ const TOKEN_ENDPOINT_V1 = "https://api.github.com/copilot_internal/token";
 
 function debugEnabled(): boolean {
   try {
-    const value = Deno.env.get("DEBUG_COCO");
+    const value = Deno.env.get("DEBUG_MODMUX");
     return value === "1";
   } catch {
     return false;

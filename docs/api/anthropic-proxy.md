@@ -194,7 +194,7 @@ Control tool usage with `tool_choice`:
 
 ````json
 {
-  "id": "msg_coco_abc123def456",
+  "id": "msg_modmux_abc123def456",
   "type": "message",
   "role": "assistant",
   "content": [
@@ -219,7 +219,7 @@ Control tool usage with `tool_choice`:
 
 ```json
 {
-  "id": "msg_coco_xyz789abc123",
+  "id": "msg_modmux_xyz789abc123",
   "type": "message",
   "role": "assistant",
   "content": [
@@ -274,7 +274,7 @@ Cache-Control: no-cache
 Connection: keep-alive
 
 event: message_start
-data: {"type": "message_start", "message": {"id": "msg_coco_abc123", "type": "message", "role": "assistant", "model": "claude-3-5-sonnet-20241022", "usage": {"input_tokens": 25, "output_tokens": 0}}}
+data: {"type": "message_start", "message": {"id": "msg_modmux_abc123", "type": "message", "role": "assistant", "model": "claude-3-5-sonnet-20241022", "usage": {"input_tokens": 25, "output_tokens": 0}}}
 
 event: content_block_start
 data: {"type": "content_block_start", "index": 0, "content_block": {"type": "text"}}

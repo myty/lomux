@@ -7,7 +7,7 @@ export function toProxyResponse(
   outputTokens: number,
 ): ProxyResponse {
   return {
-    id: `msg_coco_${Date.now()}`,
+    id: `msg_modmux_${Date.now()}`,
     type: "message",
     role: "assistant",
     content: [{ type: "text", text: content }],

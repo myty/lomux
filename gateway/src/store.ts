@@ -72,7 +72,7 @@ export interface ModmuxConfig {
 }
 
 export const DEFAULT_CONFIG: ModmuxConfig = {
-  port: 11434,
+  port: 11435,
   logLevel: "info",
   modelMap: {},
   agents: [],
@@ -91,9 +91,9 @@ export const DEFAULT_CONFIG: ModmuxConfig = {
     filePath: null,
   },
   githubUsage: {
-    backend: "disabled",
-    cliUrl: null,
-    autoStart: false,
+    backend: "external-cli",
+    cliUrl: "http://localhost:4321",
+    autoStart: true,
     preferredPort: 4321,
   },
 };
@@ -114,12 +114,12 @@ export function configDir(): string {
   return join(home, ".modmux");
 }
 
-function cocoConfigPath(): string {
+function modmuxConfigPath(): string {
   return join(configDir(), "config.json");
 }
 
 function configPath(): string {
-  return cocoConfigPath();
+  return modmuxConfigPath();
 }
 
 async function fileExists(path: string): Promise<boolean> {
@@ -132,7 +132,7 @@ async function fileExists(path: string): Promise<boolean> {
 }
 
 async function resolveConfigPathForLoad(): Promise<string> {
-  const canonical = cocoConfigPath();
+  const canonical = modmuxConfigPath();
   if (await fileExists(canonical)) return canonical;
   return canonical;
 }

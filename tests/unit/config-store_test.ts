@@ -121,7 +121,7 @@ Deno.test("saveConfig + loadConfig — round-trip", async () => {
       usageMetrics: {
         persist: true,
         snapshotIntervalMs: 120_000,
-        filePath: "/tmp/coco-usage.json",
+        filePath: "/tmp/modmux-usage.json",
       },
       githubUsage: {
         backend: "external-cli",
@@ -141,7 +141,7 @@ Deno.test("saveConfig + loadConfig — round-trip", async () => {
     assertEquals(loaded.streaming.enableDiagnostics, true);
     assertEquals(loaded.usageMetrics.persist, true);
     assertEquals(loaded.usageMetrics.snapshotIntervalMs, 120_000);
-    assertEquals(loaded.usageMetrics.filePath, "/tmp/coco-usage.json");
+    assertEquals(loaded.usageMetrics.filePath, "/tmp/modmux-usage.json");
     assertEquals(loaded.githubUsage.backend, "external-cli");
     assertEquals(loaded.githubUsage.cliUrl, "127.0.0.1:4321");
     assertEquals(loaded.githubUsage.autoStart, false);

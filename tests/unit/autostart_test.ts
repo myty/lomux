@@ -254,7 +254,7 @@ Deno.test({
 });
 
 Deno.test({
-  name: "isServiceInstalled — returns true when coco plist exists (macOS)",
+  name: "isServiceInstalled — returns true when modmux plist exists (macOS)",
   ignore: Deno.build.os !== "darwin",
   async fn() {
     const home = await makeTempHome();
@@ -271,7 +271,8 @@ Deno.test({
 });
 
 Deno.test({
-  name: "isServiceInstalled — returns true when coco unit file exists (Linux)",
+  name:
+    "isServiceInstalled — returns true when modmux unit file exists (Linux)",
   ignore: Deno.build.os !== "linux",
   async fn() {
     const home = await makeTempHome();
@@ -320,7 +321,7 @@ Deno.test({
 
 Deno.test({
   name:
-    "uninstallService dryRun — returns removed: true when coco file exists (macOS)",
+    "uninstallService dryRun — returns removed: true when modmux file exists (macOS)",
   ignore: Deno.build.os !== "darwin",
   async fn() {
     const home = await makeTempHome();

@@ -313,7 +313,7 @@ export async function verifyAgentConfig(entry: ConfigEntry): Promise<boolean> {
 export async function configureAgent(
   agentName: string,
   port: number,
-  cocoConfig: ModmuxConfig,
+  modmuxConfig: ModmuxConfig,
   options?: ConfigureOptions,
 ): Promise<ConfigEntry> {
   const agent = getAgent(agentName);
@@ -345,9 +345,9 @@ export async function configureAgent(
   };
 
   // Replace any existing entry for this agent
-  const agents = cocoConfig.agents.filter((a) => a.agentName !== agentName);
+  const agents = modmuxConfig.agents.filter((a) => a.agentName !== agentName);
   agents.push(entry);
-  await saveConfig({ ...cocoConfig, agents });
+  await saveConfig({ ...modmuxConfig, agents });
 
   return entry;
 }
@@ -358,20 +358,20 @@ export async function configureAgent(
  */
 export async function syncConfiguredAgentsToPort(
   port: number,
-  cocoConfig: ModmuxConfig,
+  modmuxConfig: ModmuxConfig,
   options?: ConfigureOptions,
 ): Promise<ModmuxConfig> {
   const endpoint = `http://127.0.0.1:${port}`;
-  const staleEntries = cocoConfig.agents.filter((entry) =>
+  const staleEntries = modmuxConfig.agents.filter((entry) =>
     entry.endpoint !== endpoint
   );
 
   if (staleEntries.length === 0) {
-    return cocoConfig;
+    return modmuxConfig;
   }
 
   const updatedAgents: ConfigEntry[] = [];
-  for (const entry of cocoConfig.agents) {
+  for (const entry of modmuxConfig.agents) {
     if (entry.endpoint === endpoint) {
       updatedAgents.push(entry);
       continue;
@@ -398,7 +398,7 @@ export async function syncConfiguredAgentsToPort(
   }
 
   const nextConfig = {
-    ...cocoConfig,
+    ...modmuxConfig,
     port,
     agents: updatedAgents,
   };
@@ -413,9 +413,9 @@ export async function syncConfiguredAgentsToPort(
  */
 export async function unconfigureAgent(
   agentName: string,
-  cocoConfig: ModmuxConfig,
+  modmuxConfig: ModmuxConfig,
 ): Promise<void> {
-  const entry = cocoConfig.agents.find((a) => a.agentName === agentName);
+  const entry = modmuxConfig.agents.find((a) => a.agentName === agentName);
   if (!entry) {
     return; // not configured — nothing to undo
   }
@@ -432,8 +432,8 @@ export async function unconfigureAgent(
     }
   }
 
-  const agents = cocoConfig.agents.filter((a) => a.agentName !== agentName);
-  await saveConfig({ ...cocoConfig, agents });
+  const agents = modmuxConfig.agents.filter((a) => a.agentName !== agentName);
+  await saveConfig({ ...modmuxConfig, agents });
 }
 
 /**
@@ -441,7 +441,7 @@ export async function unconfigureAgent(
  */
 export function isAgentConfigured(
   agentName: string,
-  cocoConfig: ModmuxConfig,
+  modmuxConfig: ModmuxConfig,
 ): boolean {
-  return cocoConfig.agents.some((a) => a.agentName === agentName);
+  return modmuxConfig.agents.some((a) => a.agentName === agentName);
 }
