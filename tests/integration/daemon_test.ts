@@ -34,7 +34,7 @@ async function checkPort(port: number): Promise<boolean> {
 
 Deno.test({
   name:
-    "daemon — modmux start binds to 127.0.0.1:11434 and /health returns 200",
+    "daemon — modmux start binds to 127.0.0.1:11435 and /health returns 200",
   ignore: true, // TODO: enable after T014/T016/T017 complete
   async fn() {
     const stat = await Deno.stat("bin/modmux").catch(() => null);
@@ -56,14 +56,14 @@ Deno.test({
     let bound = false;
     for (let i = 0; i < 50; i++) {
       await sleep(100);
-      if (await checkPort(11434)) {
+      if (await checkPort(11435)) {
         bound = true;
         break;
       }
     }
-    assertEquals(bound, true, "Port 11434 never bound");
+    assertEquals(bound, true, "Port 11435 never bound");
 
-    const resp = await fetch("http://127.0.0.1:11434/health");
+    const resp = await fetch("http://127.0.0.1:11435/health");
     assertEquals(resp.status, 200);
     const body = await resp.json() as Record<string, unknown>;
     assertEquals(body.status, "ok");
@@ -90,7 +90,7 @@ Deno.test({
 
     for (let i = 0; i < 50; i++) {
       await sleep(100);
-      if (await checkPort(11434)) break;
+      if (await checkPort(11435)) break;
     }
 
     const second = await new Deno.Command("bin/modmux", {
@@ -122,7 +122,7 @@ Deno.test({
   name: "daemon — port conflict: scans upward to next free port",
   ignore: true, // TODO: enable after T014/T016/T017 complete
   async fn() {
-    const blocker = Deno.listen({ hostname: "127.0.0.1", port: 11434 });
+    const blocker = Deno.listen({ hostname: "127.0.0.1", port: 11435 });
     try {
       const proc = new Deno.Command("bin/modmux", {
         args: ["start"],
@@ -132,7 +132,7 @@ Deno.test({
       let bound = false;
       for (let i = 0; i < 50; i++) {
         await sleep(100);
-        if (await checkPort(11435)) {
+        if (await checkPort(11436)) {
           bound = true;
           break;
         }
@@ -140,7 +140,7 @@ Deno.test({
       assertEquals(
         bound,
         true,
-        "Port 11435 never bound after conflict on 11434",
+        "Port 11436 never bound after conflict on 11435",
       );
 
       await new Deno.Command("bin/modmux", { args: ["stop"] }).output();

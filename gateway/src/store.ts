@@ -48,7 +48,7 @@ export interface GitHubUsageConfig {
 }
 
 export interface ModmuxConfig {
-  /** TCP port the proxy listens on. Default: 11434. */
+  /** TCP port the proxy listens on. Default: 11435. */
   port: number;
   /** Log level for ~/.modmux/modmux.log. Default: "info". */
   logLevel: LogLevel;

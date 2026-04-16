@@ -75,9 +75,13 @@ export async function handleMessages(req: Request): Promise<Response> {
         };
 
         try {
-          await chatStream(request, async (event) => {
-            await queueChunk(toStreamEvent(event));
+          let pendingWrites: Promise<void> = Promise.resolve();
+          await chatStream(request, (event) => {
+            pendingWrites = pendingWrites.then(() =>
+              queueChunk(toStreamEvent(event))
+            );
           });
+          await pendingWrites;
         } catch (err) {
           if (!isClosed) {
             const errorEvent = {

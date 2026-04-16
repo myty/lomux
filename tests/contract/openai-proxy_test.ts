@@ -4,7 +4,7 @@
  * GET  /v1/models
  * GET  /health (already covered in server_test.ts, included here for completeness)
  */
-import { assertEquals, assertStringIncludes } from "@std/assert";
+import { assert, assertEquals, assertStringIncludes } from "@std/assert";
 import { handleRequest } from "@modmux/gateway";
 
 // ---------------------------------------------------------------------------
@@ -490,6 +490,12 @@ Deno.test({
       assertStringIncludes(text, '"input_tokens":7');
       assertStringIncludes(text, '"output_tokens":2');
       assertStringIncludes(text, "data: [DONE]");
+      // response.completed must arrive before the stream-terminating [DONE]
+      assert(
+        text.indexOf("event: response.completed") <
+          text.indexOf("data: [DONE]"),
+        "response.completed must appear before data: [DONE]",
+      );
     } finally {
       restore();
       await s.shutdown();

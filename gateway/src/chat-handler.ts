@@ -92,10 +92,14 @@ export async function handleChatCompletions(req: Request): Promise<Response> {
         };
 
         try {
-          await chatStream(anthropicReq, async (event) => {
+          let pendingWrites: Promise<void> = Promise.resolve();
+          await chatStream(anthropicReq, (event) => {
             const line = anthropicStreamEventToOpenAI(event, state);
-            if (line) await queueChunk(line);
+            if (line) {
+              pendingWrites = pendingWrites.then(() => queueChunk(line));
+            }
           });
+          await pendingWrites;
 
           if (!isClosed) {
             await queueChunk("data: [DONE]\n\n");

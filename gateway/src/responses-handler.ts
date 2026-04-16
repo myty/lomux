@@ -629,13 +629,21 @@ export async function handleResponses(req: Request): Promise<Response> {
         };
 
         try {
-          await chatStream({ ...anthropicReq, stream: true }, async (event) => {
-            for (
-              const responseEvent of mapStreamEventToResponses(event, state)
-            ) {
-              await write(responseEvent.event, responseEvent.data);
-            }
+          // Accumulate write Promises in a chain so every SSE event is fully
+          // enqueued before the next one starts. chatStream calls onChunk
+          // synchronously, so without chaining the awaited writes inside the
+          // loop would be deferred to microtasks — causing events like
+          // response.completed to arrive after data: [DONE].
+          let pendingWrites: Promise<void> = Promise.resolve();
+          await chatStream({ ...anthropicReq, stream: true }, (event) => {
+            const mapped = mapStreamEventToResponses(event, state);
+            pendingWrites = pendingWrites.then(async () => {
+              for (const responseEvent of mapped) {
+                await write(responseEvent.event, responseEvent.data);
+              }
+            });
           });
+          await pendingWrites;
 
           if (!state.completed && state.responseId && state.outputItemId) {
             for (const event of finalizeContent(state)) {
