@@ -4,7 +4,7 @@ import { DEFAULT_MODEL_MAP, resolveModel } from "@modmux/gateway";
 Deno.test("resolveModel — known alias maps correctly", () => {
   assertEquals(resolveModel("gpt-4o"), "gpt-4o");
   assertEquals(resolveModel("claude-3-5-sonnet"), "claude-3.5-sonnet");
-  assertEquals(resolveModel("default"), "gpt-4o");
+  assertEquals(resolveModel("default"), "gpt-41-copilot");
 });
 
 Deno.test("resolveModel — unknown name passes through unchanged", () => {

@@ -10,14 +10,28 @@ import {
 // Types
 // ---------------------------------------------------------------------------
 
-interface CopilotModel {
+export interface CopilotModel {
   id: string;
   name: string;
   vendor: string;
+  supported_endpoints?: string[];
+  model_picker_category?: string;
 }
 
 interface CopilotModelsResponse {
   data: CopilotModel[];
+}
+
+/**
+ * Per-endpoint model capability sets derived from Copilot's /models API.
+ * - `chat`: models that support /chat/completions (absent supported_endpoints → chat-only by default)
+ * - `responses`: models that support /responses
+ * - `all`: full model list with metadata (for capability-based sorting)
+ */
+export interface ModelEndpointSets {
+  chat: Set<string>;
+  responses: Set<string>;
+  all: CopilotModel[];
 }
 
 // ---------------------------------------------------------------------------
@@ -87,6 +101,51 @@ export async function fetchModelList(opts?: {
 
   const body = await response.json() as CopilotModelsResponse;
   return body.data.map((m) => m.id);
+}
+
+/**
+ * Fetch per-endpoint capability sets from the Copilot /models API.
+ *
+ * Models with no `supported_endpoints` field are treated as chat-only (historical default).
+ * Models with `supported_endpoints` containing "/responses" are responses-capable.
+ *
+ * @param opts.token - Optional token. When provided, uses it directly (useful for tests).
+ */
+export async function fetchModelEndpointSets(opts?: {
+  token?: string;
+}): Promise<ModelEndpointSets> {
+  const { token } = opts?.token ? { token: opts.token } : await getToken();
+  const response = await fetch("https://api.githubcopilot.com/models", {
+    headers: {
+      "Authorization": `Bearer ${token}`,
+      "Content-Type": "application/json",
+      "editor-version": `vscode/${VSCODE_VERSION}`,
+      "editor-plugin-version": `copilot-chat/${COPILOT_PLUGIN_VERSION}`,
+      "user-agent": `GitHubCopilotChat/${COPILOT_PLUGIN_VERSION}`,
+      "x-github-api-version": COPILOT_API_VERSION,
+    },
+  });
+
+  if (!response.ok) {
+    await response.body?.cancel();
+    return { chat: new Set(), responses: new Set(), all: [] };
+  }
+
+  const body = await response.json() as CopilotModelsResponse;
+  const chat = new Set<string>();
+  const responses = new Set<string>();
+
+  for (const model of body.data) {
+    const ep = model.supported_endpoints;
+    if (!ep || ep.includes("/chat/completions")) {
+      chat.add(model.id);
+    }
+    if (ep?.includes("/responses")) {
+      responses.add(model.id);
+    }
+  }
+
+  return { chat, responses, all: body.data };
 }
 
 /** Returns the cached set of Copilot model IDs, fetching once if needed.

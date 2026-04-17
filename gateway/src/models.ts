@@ -22,18 +22,18 @@ export const DEFAULT_MODEL_MAP: Record<string, string> = {
   "gpt-4-turbo": "gpt-4-turbo",
   "gpt-4": "gpt-4",
   "gpt-3.5-turbo": "gpt-3.5-turbo",
-  // GPT-5/Codex aliases mapped to chat-compatible Copilot IDs.
-  // Only kept for models Copilot does NOT natively expose on its live list.
-  // Models like gpt-5.3-codex, gpt-5.2-codex, gpt-5.2, gpt-5-mini are
-  // available natively and resolved via the live-list exact-match path.
-  "gpt-5.1-codex": "gpt-4.1",
+  // GPT-5/Codex aliases — only for models NOT in Copilot's live list.
+  // Maps to the most capable chat-compatible model available.
+  // Models in the live list (gpt-5.3-codex, gpt-5.2-codex, gpt-5.2,
+  // gpt-5-mini, gpt-5.4, gpt-5.4-mini) are resolved via exact-match.
+  "gpt-5.1-codex": "gpt-41-copilot",
   "gpt-5.1-codex-mini": "gpt-4o-mini",
-  "gpt-5.1-codex-max": "gpt-4o",
-  "gpt-5.1": "gpt-4.1",
+  "gpt-5.1-codex-max": "gpt-41-copilot",
+  "gpt-5.1": "gpt-41-copilot",
   // Codex defaults
   "codex-mini-latest": "gpt-4o-mini",
   // Generic aliases
-  "default": "gpt-4o",
+  "default": "gpt-41-copilot",
 };
 
 /**
