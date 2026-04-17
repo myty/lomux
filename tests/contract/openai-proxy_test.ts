@@ -561,6 +561,60 @@ Deno.test({
 });
 
 // ---------------------------------------------------------------------------
+// /v1/responses — Responses API flat tool format
+// ---------------------------------------------------------------------------
+
+Deno.test(
+  "OpenAI /v1/responses — flat tool format does not crash (no 'Cannot read .name')",
+  async () => {
+    const s = server();
+    const { port } = s.addr as Deno.NetAddr;
+    const chatChunks = [
+      makeSSEChatChunk("hello"),
+      makeSSEChatChunk("", "stop"),
+      makeSSEUsageChunk(5, 2),
+    ];
+    const restore = stubFetch(
+      new Response(chatChunks.join("") + "data: [DONE]\n\n", {
+        status: 200,
+        headers: { "Content-Type": "text/event-stream" },
+      }),
+    );
+    try {
+      // Responses API sends tools flat: { type, name, description, parameters }
+      // NOT nested under .function like Chat Completions API does.
+      const res = await fetch(`http://127.0.0.1:${port}/v1/responses`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "gpt-4o",
+          input: "ping",
+          stream: true,
+          tools: [{
+            type: "function",
+            name: "get_weather",
+            description: "Get current weather",
+            parameters: {
+              type: "object",
+              properties: { location: { type: "string" } },
+              required: ["location"],
+            },
+          }],
+          tool_choice: "auto",
+        }),
+      });
+
+      // Must not be 500 — handler must survive the flat-tool format
+      assert(res.status !== 500, `Expected non-500, got ${res.status}`);
+      await res.body?.cancel();
+    } finally {
+      restore();
+      await s.shutdown();
+    }
+  },
+);
+
+// ---------------------------------------------------------------------------
 // GET /v1/models
 // ---------------------------------------------------------------------------
 

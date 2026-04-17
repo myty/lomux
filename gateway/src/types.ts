@@ -337,6 +337,22 @@ export interface OpenAIResponsesInputMessage {
   content: string | OpenAIResponsesInputTextPart[];
 }
 
+/** Tool shape used by the Responses API — flat, not nested under `function`. */
+export interface OpenAIResponsesTool {
+  type: "function";
+  name: string;
+  description?: string;
+  parameters?: Record<string, unknown>;
+  strict?: boolean;
+}
+
+/** tool_choice shape used by the Responses API. */
+export type OpenAIResponsesToolChoice =
+  | "auto"
+  | "none"
+  | "required"
+  | { type: "function"; name: string };
+
 export interface OpenAIResponsesRequest {
   model: string;
   input?: string | OpenAIResponsesInputMessage[];
@@ -344,6 +360,6 @@ export interface OpenAIResponsesRequest {
   temperature?: number;
   top_p?: number;
   stream?: boolean;
-  tools?: OpenAITool[];
-  tool_choice?: OpenAIChatRequest["tool_choice"];
+  tools?: OpenAIResponsesTool[];
+  tool_choice?: OpenAIResponsesToolChoice;
 }

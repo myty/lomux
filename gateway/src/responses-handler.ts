@@ -18,6 +18,8 @@ import type {
   OpenAIChatRequest,
   OpenAIResponsesInputMessage,
   OpenAIResponsesRequest,
+  OpenAIResponsesTool,
+  OpenAIResponsesToolChoice,
   OpenAIToolCall,
   ProxyRequest,
   StreamEvent,
@@ -60,6 +62,30 @@ function responsesInputToMessages(
   return messages.filter((message) =>
     typeof message.content === "string" && message.content.trim().length > 0
   );
+}
+
+/** Convert Responses API tool (flat) to Chat Completions tool (nested). */
+function normalizeResponsesTools(
+  tools?: OpenAIResponsesTool[],
+): OpenAIChatRequest["tools"] {
+  if (!tools || tools.length === 0) return undefined;
+  return tools.map((t) => ({
+    type: "function" as const,
+    function: {
+      name: t.name,
+      ...(t.description && { description: t.description }),
+      ...(t.parameters && { parameters: t.parameters }),
+    },
+  }));
+}
+
+/** Convert Responses API tool_choice (flat) to Chat Completions tool_choice (nested). */
+function normalizeResponsesToolChoice(
+  choice?: OpenAIResponsesToolChoice,
+): OpenAIChatRequest["tool_choice"] {
+  if (!choice || choice === "none") return undefined;
+  if (choice === "auto" || choice === "required") return choice;
+  return { type: "function", function: { name: choice.name } };
 }
 
 interface ResponsesUsage {
@@ -596,8 +622,8 @@ export async function handleResponses(req: Request): Promise<Response> {
       stream: false,
       temperature: responsesReq.temperature,
       top_p: responsesReq.top_p,
-      tools: responsesReq.tools,
-      tool_choice: responsesReq.tool_choice,
+      tools: normalizeResponsesTools(responsesReq.tools),
+      tool_choice: normalizeResponsesToolChoice(responsesReq.tool_choice),
     }),
     model: resolvedModel,
     stream: false,
