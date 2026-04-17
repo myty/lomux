@@ -11,6 +11,7 @@ const LEVELS: Record<LogLevel, number> = {
 };
 
 let currentLevel: LogLevel = "info";
+const MAX_LOG_TEXT_CHARS = 500;
 
 function legacyLogPath(): string {
   const home = Deno.env.get("HOME") ?? Deno.env.get("USERPROFILE") ?? ".";
@@ -57,6 +58,12 @@ export async function log(
   } catch {
     // no-op when log file is unwritable (e.g. permissions, missing dir)
   }
+}
+
+export function summarizeLogText(text: string): string {
+  const trimmed = text.trim();
+  if (trimmed.length <= MAX_LOG_TEXT_CHARS) return trimmed;
+  return trimmed.slice(0, MAX_LOG_TEXT_CHARS) + "...[truncated]";
 }
 
 /** Read the last N lines from the log matching a given level. */

@@ -15,4 +15,10 @@ export {
   type ModelEndpointSets,
   resolveModel,
 } from "./models.ts";
+export {
+  isCodexLike,
+  type ModelFamily,
+  modelFamily,
+  subfamilyRank,
+} from "./model-family.ts";
 export type * from "./types.ts";

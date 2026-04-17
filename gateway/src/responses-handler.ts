@@ -6,7 +6,7 @@ import {
   validateOpenAIModelField,
 } from "./openai-handler-utils.ts";
 import { openAIErrorResponse } from "./response-utils.ts";
-import { log } from "./log.ts";
+import { log, summarizeLogText } from "./log.ts";
 import type {
   OpenAIResponsesInputMessage,
   OpenAIResponsesRequest,
@@ -195,7 +195,7 @@ export async function handleResponses(req: Request): Promise<Response> {
     if (!upstream.ok) {
       await log("warn", "responses: upstream error", {
         status: upstream.status,
-        body: await upstream.clone().text().catch(() => ""),
+        body: summarizeLogText(await upstream.clone().text().catch(() => "")),
       });
       return await normalizeUpstreamError(upstream);
     }

@@ -5,6 +5,7 @@ import {
   DEFAULT_COPILOT_MODEL,
   VSCODE_VERSION,
 } from "./types.ts";
+import { modelFamily } from "./model-family.ts";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -42,20 +43,6 @@ let cachedModelIds: Set<string> | null = null;
 
 function uniq(values: string[]): string[] {
   return values.filter((value, index, array) => array.indexOf(value) === index);
-}
-
-type ModelFamily = "claude" | "openai" | "unknown";
-
-function modelFamily(model: string): ModelFamily {
-  const lower = model.toLowerCase();
-  if (lower.includes("claude")) return "claude";
-  if (
-    lower.includes("codex") || lower.startsWith("gpt") ||
-    /^o[134]\b/.test(lower)
-  ) {
-    return "openai";
-  }
-  return "unknown";
 }
 
 // ---------------------------------------------------------------------------

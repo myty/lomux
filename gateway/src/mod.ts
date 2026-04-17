@@ -17,7 +17,7 @@ export { detectAll, detectOne } from "./detector.ts";
 export type { AgentRecord } from "./registry.ts";
 export { formatStatus, getServiceState } from "./status.ts";
 export { getDaemonManager, getServiceManager } from "./managers/mod.ts";
-export { log, setLogLevel } from "./log.ts";
+export { log, setLogLevel, summarizeLogText } from "./log.ts";
 export { handleRequest } from "./router.ts";
 export { DEFAULT_MODEL_MAP, resolveModel } from "./models.ts";
 export {
