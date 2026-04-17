@@ -337,10 +337,11 @@ export interface OpenAIResponsesInputMessage {
   content: string | OpenAIResponsesInputTextPart[];
 }
 
-/** Tool shape used by the Responses API — flat, not nested under `function`. */
+/** Tool shape used by the Responses API — flat, not nested under `function`.
+ * Built-in types (web_search, code_interpreter, etc.) omit `name`. */
 export interface OpenAIResponsesTool {
-  type: "function";
-  name: string;
+  type: string;
+  name?: string;
   description?: string;
   parameters?: Record<string, unknown>;
   strict?: boolean;

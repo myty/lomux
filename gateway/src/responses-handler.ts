@@ -64,15 +64,21 @@ function responsesInputToMessages(
   );
 }
 
-/** Convert Responses API tool (flat) to Chat Completions tool (nested). */
+/** Convert Responses API tool (flat) to Chat Completions tool (nested).
+ * Filters out built-in tool types (web_search, code_interpreter, etc.)
+ * that have no `name` — Anthropic only supports custom function tools. */
 function normalizeResponsesTools(
   tools?: OpenAIResponsesTool[],
 ): OpenAIChatRequest["tools"] {
   if (!tools || tools.length === 0) return undefined;
-  return tools.map((t) => ({
+  const functionTools = tools.filter((t) =>
+    t.type === "function" && typeof t.name === "string" && t.name.length > 0
+  );
+  if (functionTools.length === 0) return undefined;
+  return functionTools.map((t) => ({
     type: "function" as const,
     function: {
-      name: t.name,
+      name: t.name as string,
       ...(t.description && { description: t.description }),
       ...(t.parameters && { parameters: t.parameters }),
     },
