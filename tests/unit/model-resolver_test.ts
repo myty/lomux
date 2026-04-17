@@ -5,6 +5,8 @@ import {
   resolveModelForEndpoint,
 } from "@modmux/gateway";
 
+const TEST_GITHUB_TOKEN = "ghu_modmux_test_token";
+
 function makeTokenResponse(): Response {
   return new Response(
     JSON.stringify({
@@ -21,6 +23,8 @@ function withFetchStub(
   fn: () => Promise<void>,
 ): Promise<void> {
   const original = globalThis.fetch;
+  const originalGithubToken = Deno.env.get("MODMUX_GITHUB_TOKEN");
+  Deno.env.set("MODMUX_GITHUB_TOKEN", TEST_GITHUB_TOKEN);
   globalThis.fetch = ((input: string | URL | Request) => {
     const url = typeof input === "string"
       ? input
@@ -46,6 +50,11 @@ function withFetchStub(
 
   return Promise.resolve(fn()).finally(() => {
     globalThis.fetch = original;
+    if (originalGithubToken === undefined) {
+      Deno.env.delete("MODMUX_GITHUB_TOKEN");
+    } else {
+      Deno.env.set("MODMUX_GITHUB_TOKEN", originalGithubToken);
+    }
     clearTokenCache();
     clearModelResolverCache();
   });

@@ -143,6 +143,10 @@ export async function getToken(opts?: {
   if (opts?.getGitHubToken) {
     githubToken = await opts.getGitHubToken();
   } else {
+    githubToken = Deno.env.get("MODMUX_GITHUB_TOKEN") ?? undefined;
+  }
+
+  if (!githubToken) {
     const tokenStore = createTokenStore();
     const authToken = await tokenStore.load();
     githubToken = authToken?.accessToken;

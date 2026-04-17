@@ -11,6 +11,8 @@ import { clearModelResolverCache, handleRequest } from "@modmux/gateway";
 // Helpers
 // ---------------------------------------------------------------------------
 
+const TEST_GITHUB_TOKEN = "ghu_modmux_test_token";
+
 function server() {
   return Deno.serve({
     port: 0,
@@ -47,7 +49,9 @@ function makeModelsResponse(
 
 function stubFetch(chatResponse: Response): () => void {
   const original = globalThis.fetch;
+  const originalGithubToken = Deno.env.get("MODMUX_GITHUB_TOKEN");
   clearModelResolverCache();
+  Deno.env.set("MODMUX_GITHUB_TOKEN", TEST_GITHUB_TOKEN);
   globalThis.fetch = ((
     input: string | URL | Request,
     init?: RequestInit,
@@ -77,6 +81,11 @@ function stubFetch(chatResponse: Response): () => void {
 
   return () => {
     globalThis.fetch = original;
+    if (originalGithubToken === undefined) {
+      Deno.env.delete("MODMUX_GITHUB_TOKEN");
+    } else {
+      Deno.env.set("MODMUX_GITHUB_TOKEN", originalGithubToken);
+    }
     clearModelResolverCache();
   };
 }
