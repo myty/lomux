@@ -29,6 +29,7 @@ import { getToken } from "./token.ts";
 // ---------------------------------------------------------------------------
 
 const COPILOT_CHAT_URL = "https://api.githubcopilot.com/chat/completions";
+const COPILOT_RESPONSES_URL = "https://api.githubcopilot.com/v1/responses";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -868,4 +869,31 @@ export async function chatStream(
   // Flush if [DONE] was never received
   emitHeader();
   emitDone("end_turn");
+}
+
+// ---------------------------------------------------------------------------
+// Direct Responses API proxy
+// ---------------------------------------------------------------------------
+
+/**
+ * Proxy a request directly to Copilot's /v1/responses endpoint, injecting
+ * auth headers. Returns the raw Response so the caller can stream it back
+ * to the client without any translation overhead.
+ *
+ * Use this from the gateway /v1/responses handler instead of the
+ * openAIToAnthropic → chatStream path, which double-converts and loses
+ * fidelity (especially for tools and responses-only models).
+ */
+export async function proxyResponses(
+  body: Record<string, unknown>,
+  opts?: ChatOptions,
+): Promise<Response> {
+  const tokenData = await getToken({ getGitHubToken: opts?.getGitHubToken });
+  const headers = buildHeaders(tokenData.token, false);
+
+  return await fetchWithRetry(COPILOT_RESPONSES_URL, {
+    method: "POST",
+    headers: { ...headers, "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
 }

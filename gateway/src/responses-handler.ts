@@ -1,580 +1,85 @@
-import { chat, chatStream } from "@modmux/providers";
-import { anthropicToOpenAI, openAIToAnthropic } from "./openai-translate.ts";
+import { proxyResponses } from "@modmux/providers";
 import {
   openAIServiceUnavailable,
   parseOpenAIRequestBody,
   resolveOpenAIModel,
   validateOpenAIModelField,
 } from "./openai-handler-utils.ts";
-import {
-  EVENT_STREAM_HEADERS,
-  jsonResponse,
-  openAIErrorBody,
-  openAIErrorResponse,
-} from "./response-utils.ts";
+import { openAIErrorResponse } from "./response-utils.ts";
 import { log } from "./log.ts";
-import { loadConfig } from "./store.ts";
 import type {
-  OpenAIChatRequest,
   OpenAIResponsesInputMessage,
   OpenAIResponsesRequest,
-  OpenAIResponsesTool,
-  OpenAIResponsesToolChoice,
-  OpenAIToolCall,
-  ProxyRequest,
-  StreamEvent,
 } from "./types.ts";
 
-function responsesInputToMessages(
+// ---------------------------------------------------------------------------
+// Input normalization + validation
+// ---------------------------------------------------------------------------
+
+/**
+ * Strip invalid content parts from a message input array before forwarding.
+ * Removes parts that are missing text (e.g. `{type:"text"}` with no `text`
+ * field) so Copilot doesn't reject the entire request due to one bad part.
+ * Returns the input unchanged if it's a plain string.
+ */
+function normalizeInput(
   input: string | OpenAIResponsesInputMessage[] | undefined,
-): OpenAIChatRequest["messages"] {
-  if (typeof input === "string") {
-    return [{ role: "user", content: input }];
-  }
+): string | OpenAIResponsesInputMessage[] | undefined {
+  if (!Array.isArray(input)) return input;
 
-  if (!Array.isArray(input)) return [];
-
-  const messages: OpenAIChatRequest["messages"] = [];
-  for (const item of input) {
-    const role = item.role;
-    if (role !== "user" && role !== "assistant" && role !== "system") {
-      continue;
-    }
-
-    if (typeof item.content === "string") {
-      messages.push({ role, content: item.content });
-      continue;
-    }
-
-    if (Array.isArray(item.content)) {
-      const text = item.content
-        .filter((part): part is { type: "input_text" | "text"; text: string } =>
-          part && typeof part === "object" &&
+  return input.map((item) => {
+    if (!Array.isArray(item.content)) return item;
+    const cleanParts = item.content.filter(
+      (part) =>
+        !(
+          part &&
+          typeof part === "object" &&
           (part.type === "input_text" || part.type === "text") &&
-          typeof part.text === "string"
-        )
-        .map((part) => part.text)
-        .join("\n");
-      messages.push({ role, content: text });
-    }
-  }
-
-  return messages.filter((message) =>
-    typeof message.content === "string" && message.content.trim().length > 0
-  );
+          typeof part.text !== "string"
+        ),
+    );
+    return { ...item, content: cleanParts };
+  });
 }
 
-/** Convert Responses API tool (flat) to Chat Completions tool (nested).
- * Filters out built-in tool types (web_search, code_interpreter, etc.)
- * that have no `name` — Anthropic only supports custom function tools. */
-function normalizeResponsesTools(
-  tools?: OpenAIResponsesTool[],
-): OpenAIChatRequest["tools"] {
-  if (!tools || tools.length === 0) return undefined;
-  const functionTools = tools.filter((t) =>
-    t.type === "function" && typeof t.name === "string" && t.name.length > 0
-  );
-  if (functionTools.length === 0) return undefined;
-  return functionTools.map((t) => ({
-    type: "function" as const,
-    function: {
-      name: t.name as string,
-      ...(t.description && { description: t.description }),
-      ...(t.parameters && { parameters: t.parameters }),
-    },
-  }));
-}
+/**
+ * Returns true if the Responses API input contains at least one message with
+ * non-empty text content. Used to reject obviously invalid requests early
+ * rather than forwarding garbage to Copilot.
+ */
+function hasValidInput(
+  input: string | OpenAIResponsesInputMessage[] | undefined,
+): boolean {
+  if (typeof input === "string") return input.trim().length > 0;
+  if (!Array.isArray(input) || input.length === 0) return false;
 
-/** Convert Responses API tool_choice (flat) to Chat Completions tool_choice (nested). */
-function normalizeResponsesToolChoice(
-  choice?: OpenAIResponsesToolChoice,
-): OpenAIChatRequest["tool_choice"] {
-  if (!choice || choice === "none") return undefined;
-  if (choice === "auto" || choice === "required") return choice;
-  return { type: "function", function: { name: choice.name } };
-}
-
-interface ResponsesUsage {
-  input_tokens: number;
-  output_tokens: number;
-  total_tokens: number;
-  input_tokens_details: { cached_tokens: number };
-  output_tokens_details: { reasoning_tokens: number };
-}
-
-interface ResponsesBody {
-  id: string;
-  object: "response";
-  created_at: number;
-  status: "completed";
-  model: string;
-  output: ResponsesOutputItem[];
-  output_text: string;
-  usage: ResponsesUsage;
-}
-
-interface ResponsesMessageOutputItem {
-  type: "message";
-  role: "assistant";
-  content: Array<{ type: "output_text"; text: string }>;
-}
-
-interface ResponsesFunctionCallOutputItem {
-  type: "function_call";
-  id: string;
-  call_id: string;
-  name: string;
-  arguments: string;
-  status: "completed";
-}
-
-type ResponsesOutputItem =
-  | ResponsesMessageOutputItem
-  | ResponsesFunctionCallOutputItem;
-
-interface StreamFunctionCallState {
-  itemId: string;
-  callId: string;
-  name: string;
-  arguments: string;
-}
-
-interface ResponsesStreamState {
-  requestedModel: string;
-  responseId: string | null;
-  outputItemId: string | null;
-  createdAt: number;
-  text: string;
-  usage: ResponsesUsage | null;
-  textBlockIndex: number | null;
-  contentDone: boolean;
-  functionCalls: Map<number, StreamFunctionCallState>;
-  completed: boolean;
-}
-
-function usageFromCounts(
-  promptTokens: number,
-  completionTokens: number,
-): ResponsesUsage {
-  return {
-    input_tokens: promptTokens,
-    output_tokens: completionTokens,
-    total_tokens: promptTokens + completionTokens,
-    input_tokens_details: { cached_tokens: 0 },
-    output_tokens_details: { reasoning_tokens: 0 },
-  };
-}
-
-function buildResponsesBody(
-  responseId: string,
-  createdAt: number,
-  model: string,
-  text: string,
-  usage: ResponsesUsage,
-  output: ResponsesOutputItem[],
-): ResponsesBody {
-  return {
-    id: responseId,
-    object: "response",
-    created_at: createdAt,
-    status: "completed",
-    model,
-    output,
-    output_text: text,
-    usage,
-  };
-}
-
-function messageOutput(text: string): ResponsesMessageOutputItem {
-  return {
-    type: "message",
-    role: "assistant",
-    content: [{ type: "output_text", text }],
-  };
-}
-
-function functionCallOutput(
-  toolCall: OpenAIToolCall,
-): ResponsesFunctionCallOutputItem {
-  return {
-    type: "function_call",
-    id: `fc_${toolCall.id}`,
-    call_id: toolCall.id,
-    name: toolCall.function.name,
-    arguments: toolCall.function.arguments,
-    status: "completed",
-  };
-}
-
-function toResponsesBody(openAIResp: ReturnType<typeof anthropicToOpenAI>) {
-  const message = openAIResp.choices[0]?.message;
-  const text = message?.content ?? "";
-  const output: ResponsesOutputItem[] = [];
-
-  output.push(messageOutput(text));
-  if (message?.tool_calls) {
-    for (const toolCall of message.tool_calls) {
-      output.push(functionCallOutput(toolCall));
-    }
-  }
-
-  return buildResponsesBody(
-    `resp_${openAIResp.id}`,
-    openAIResp.created,
-    openAIResp.model,
-    text,
-    usageFromCounts(
-      openAIResp.usage.prompt_tokens,
-      openAIResp.usage.completion_tokens,
-    ),
-    output,
-  );
-}
-
-interface ResponsesSseEvent {
-  event: string;
-  data: Record<string, unknown>;
-}
-
-async function getResponsesBody(
-  anthropicReq: ProxyRequest,
-  requestedModel: string,
-) {
-  const anthropicResp = await chat(anthropicReq);
-  const openAIResp = anthropicToOpenAI(anthropicResp, requestedModel);
-  return toResponsesBody(openAIResp);
-}
-
-function createResponsesStreamState(
-  requestedModel: string,
-): ResponsesStreamState {
-  return {
-    requestedModel,
-    responseId: null,
-    outputItemId: null,
-    createdAt: Math.floor(Date.now() / 1000),
-    text: "",
-    usage: null,
-    textBlockIndex: null,
-    contentDone: false,
-    functionCalls: new Map(),
-    completed: false,
-  };
-}
-
-function toFunctionCallOutputItems(
-  state: ResponsesStreamState,
-): ResponsesFunctionCallOutputItem[] {
-  return Array.from(state.functionCalls.values()).map((call) => ({
-    type: "function_call",
-    id: call.itemId,
-    call_id: call.callId,
-    name: call.name,
-    arguments: call.arguments,
-    status: "completed",
-  }));
-}
-
-function ensureResponseIds(
-  state: ResponsesStreamState,
-  messageId?: string,
-): void {
-  if (state.responseId && state.outputItemId) return;
-  const baseId = messageId ?? crypto.randomUUID();
-  state.responseId = `resp_${baseId}`;
-  state.outputItemId = `msg_${state.responseId}`;
-}
-
-function finalizeContent(state: ResponsesStreamState): ResponsesSseEvent[] {
-  if (state.contentDone || !state.responseId || !state.outputItemId) {
-    return [];
-  }
-
-  state.contentDone = true;
-  return [
-    {
-      event: "response.output_text.done",
-      data: {
-        type: "response.output_text.done",
-        response_id: state.responseId,
-        output_index: 0,
-        item_id: state.outputItemId,
-        content_index: 0,
-        text: state.text,
-      },
-    },
-    {
-      event: "response.content_part.done",
-      data: {
-        type: "response.content_part.done",
-        response_id: state.responseId,
-        output_index: 0,
-        item_id: state.outputItemId,
-        content_index: 0,
-        part: { type: "output_text", text: state.text },
-      },
-    },
-  ];
-}
-
-function mapStreamEventToResponses(
-  event: StreamEvent,
-  state: ResponsesStreamState,
-): ResponsesSseEvent[] {
-  switch (event.type) {
-    case "message_start": {
-      const message = event.message;
-      const messageId =
-        message && typeof message === "object" && "id" in message &&
-          typeof message.id === "string"
-          ? message.id
-          : undefined;
-      ensureResponseIds(state, messageId);
-
-      return [
-        {
-          event: "response.created",
-          data: {
-            type: "response.created",
-            response: {
-              id: state.responseId,
-              object: "response",
-              model: state.requestedModel,
-              status: "in_progress",
-            },
-          },
-        },
-        {
-          event: "response.output_item.added",
-          data: {
-            type: "response.output_item.added",
-            response_id: state.responseId,
-            output_index: 0,
-            item: {
-              id: state.outputItemId,
-              type: "message",
-              role: "assistant",
-              status: "in_progress",
-              content: [],
-            },
-          },
-        },
-        {
-          event: "response.content_part.added",
-          data: {
-            type: "response.content_part.added",
-            response_id: state.responseId,
-            output_index: 0,
-            item_id: state.outputItemId,
-            content_index: 0,
-            part: { type: "output_text", text: "" },
-          },
-        },
-      ];
-    }
-
-    case "content_block_start": {
-      const contentBlock = event.content_block;
-      if (
-        contentBlock && typeof contentBlock === "object" &&
-        "type" in contentBlock && contentBlock.type === "text" &&
-        typeof event.index === "number"
-      ) {
-        state.textBlockIndex = event.index;
-        return [];
-      }
-
-      if (
-        contentBlock && typeof contentBlock === "object" &&
-        "type" in contentBlock && contentBlock.type === "tool_use" &&
-        typeof event.index === "number"
-      ) {
-        ensureResponseIds(state);
-
-        const functionCall: StreamFunctionCallState = {
-          itemId: `fc_${contentBlock.id}`,
-          callId: contentBlock.id,
-          name: contentBlock.name,
-          arguments: "",
-        };
-
-        state.functionCalls.set(event.index, functionCall);
-
-        return [{
-          event: "response.output_item.added",
-          data: {
-            type: "response.output_item.added",
-            response_id: state.responseId,
-            output_index: 1,
-            item: {
-              id: functionCall.itemId,
-              type: "function_call",
-              call_id: functionCall.callId,
-              name: functionCall.name,
-              arguments: functionCall.arguments,
-              status: "in_progress",
-            },
-          },
-        }];
-      }
-
-      return [];
-    }
-
-    case "content_block_delta": {
-      const delta = event.delta;
-      if (
-        delta && typeof delta === "object" && "type" in delta &&
-        delta.type === "input_json_delta" && typeof event.index === "number"
-      ) {
-        const functionCall = state.functionCalls.get(event.index);
-        if (!functionCall) return [];
-
-        functionCall.arguments += delta.partial_json;
-
-        return [{
-          event: "response.function_call_arguments.delta",
-          data: {
-            type: "response.function_call_arguments.delta",
-            response_id: state.responseId,
-            item_id: functionCall.itemId,
-            output_index: 1,
-            delta: delta.partial_json,
-          },
-        }];
-      }
-
-      if (
-        !delta || typeof delta !== "object" || !("type" in delta) ||
-        delta.type !== "text_delta" || !("text" in delta) ||
-        typeof delta.text !== "string"
-      ) {
-        return [];
-      }
-
-      ensureResponseIds(state);
-      state.text += delta.text;
-      return [{
-        event: "response.output_text.delta",
-        data: {
-          type: "response.output_text.delta",
-          response_id: state.responseId,
-          output_index: 0,
-          item_id: state.outputItemId,
-          content_index: 0,
-          delta: delta.text,
-        },
-      }];
-    }
-
-    case "content_block_stop": {
-      if (typeof event.index === "number") {
-        const functionCall = state.functionCalls.get(event.index);
-        if (functionCall) {
-          return [
-            {
-              event: "response.function_call_arguments.done",
-              data: {
-                type: "response.function_call_arguments.done",
-                response_id: state.responseId,
-                item_id: functionCall.itemId,
-                output_index: 1,
-                arguments: functionCall.arguments,
-              },
-            },
-            {
-              event: "response.output_item.done",
-              data: {
-                type: "response.output_item.done",
-                response_id: state.responseId,
-                output_index: 1,
-                item: {
-                  id: functionCall.itemId,
-                  type: "function_call",
-                  call_id: functionCall.callId,
-                  name: functionCall.name,
-                  arguments: functionCall.arguments,
-                  status: "completed",
-                },
-              },
-            },
-          ];
-        }
-      }
-
-      if (
-        state.textBlockIndex !== null && typeof event.index === "number" &&
-        event.index === state.textBlockIndex
-      ) {
-        return finalizeContent(state);
-      }
-      return [];
-    }
-
-    case "message_delta": {
-      const usage = event.usage;
-      if (
-        usage && typeof usage === "object" && "input_tokens" in usage &&
-        "output_tokens" in usage && typeof usage.input_tokens === "number" &&
-        typeof usage.output_tokens === "number"
-      ) {
-        state.usage = usageFromCounts(usage.input_tokens, usage.output_tokens);
-      }
-      return [];
-    }
-
-    case "message_stop": {
-      ensureResponseIds(state);
-      const events = finalizeContent(state);
-      const usage = state.usage ?? usageFromCounts(0, 0);
-      const output = [
-        messageOutput(state.text),
-        ...toFunctionCallOutputItems(state),
-      ];
-      const responseBody = buildResponsesBody(
-        state.responseId!,
-        state.createdAt,
-        state.requestedModel,
-        state.text,
-        usage,
-        output,
+  return input.some((item) => {
+    if (typeof item.content === "string") return item.content.trim().length > 0;
+    if (Array.isArray(item.content)) {
+      return item.content.some(
+        (part) =>
+          part &&
+          typeof part === "object" &&
+          (part.type === "input_text" || part.type === "text") &&
+          typeof part.text === "string" &&
+          part.text.trim().length > 0,
       );
-
-      events.push(
-        {
-          event: "response.output_item.done",
-          data: {
-            type: "response.output_item.done",
-            response_id: state.responseId,
-            output_index: 0,
-            item: {
-              id: state.outputItemId,
-              type: "message",
-              role: "assistant",
-              status: "completed",
-              content: [{ type: "output_text", text: state.text }],
-            },
-          },
-        },
-        {
-          event: "response.completed",
-          data: {
-            type: "response.completed",
-            response: responseBody,
-          },
-        },
-      );
-
-      state.completed = true;
-
-      return events;
     }
-
-    default:
-      return [];
-  }
+    return false;
+  });
 }
 
+// ---------------------------------------------------------------------------
+// Handler
+// ---------------------------------------------------------------------------
+
+/**
+ * POST /v1/responses — thin proxy to Copilot's native responses endpoint.
+ *
+ * Resolves the model name, validates the input, then forwards the request
+ * body directly to https://api.githubcopilot.com/v1/responses and streams
+ * the response back unchanged. No translation through Anthropic format.
+ */
 export async function handleResponses(req: Request): Promise<Response> {
   const bodyOrResponse = await parseOpenAIRequestBody(req);
   if (bodyOrResponse instanceof Response) return bodyOrResponse;
@@ -584,15 +89,13 @@ export async function handleResponses(req: Request): Promise<Response> {
   if (modelError) return modelError;
 
   const responsesReq = body as unknown as OpenAIResponsesRequest;
-  const messages = responsesInputToMessages(responsesReq.input);
 
   await log("debug", "responses: request received", {
     model: responsesReq.model,
     stream: responsesReq.stream ?? false,
-    messageCount: messages.length,
   });
 
-  if (messages.length === 0) {
+  if (!hasValidInput(responsesReq.input)) {
     await log("debug", "responses: rejected — empty input");
     return openAIErrorResponse(
       400,
@@ -601,6 +104,11 @@ export async function handleResponses(req: Request): Promise<Response> {
       "invalid_value",
     );
   }
+
+  const normalizedInput = normalizeInput(responsesReq.input);
+  const proxiedBody = normalizedInput === responsesReq.input
+    ? (body as Record<string, unknown>)
+    : { ...(body as Record<string, unknown>), input: normalizedInput };
 
   const resolvedModelOrResponse = await resolveOpenAIModel(
     responsesReq.model,
@@ -620,217 +128,37 @@ export async function handleResponses(req: Request): Promise<Response> {
     resolved: resolvedModel,
   });
 
-  const rawTools = responsesReq.tools ?? [];
-  const normalizedTools = normalizeResponsesTools(responsesReq.tools);
-  await log("debug", "responses: tools normalized", {
-    rawCount: rawTools.length,
-    rawTypes: rawTools.map((t) => `${t.type}:${t.name ?? "(none)"}`),
-    normalizedCount: normalizedTools?.length ?? 0,
-    normalizedNames: normalizedTools?.map((t) => t.function.name) ?? [],
-  });
-
-  const anthropicReq: ProxyRequest = {
-    ...openAIToAnthropic({
-      model: responsesReq.model,
-      messages,
-      max_tokens: responsesReq.max_output_tokens ?? 4096,
-      stream: false,
-      temperature: responsesReq.temperature,
-      top_p: responsesReq.top_p,
-      tools: normalizedTools,
-      tool_choice: normalizeResponsesToolChoice(responsesReq.tool_choice),
-    }),
-    model: resolvedModel,
-    stream: false,
-  };
-
-  if (responsesReq.stream === true) {
-    const config = await loadConfig();
-
-    const stream = new ReadableStream({
-      async start(controller) {
-        const encoder = new TextEncoder();
-        const state = createResponsesStreamState(responsesReq.model);
-        let backpressureCount = 0;
-        let isClosed = false;
-
-        const queueChunk = async (data: string): Promise<void> => {
-          if (isClosed) return;
-
-          try {
-            controller.enqueue(encoder.encode(data));
-          } catch (err) {
-            if (err instanceof TypeError && err.message.includes("full")) {
-              backpressureCount++;
-              const delay = Math.min(100 * backpressureCount, 1000);
-              await new Promise((resolve) => setTimeout(resolve, delay));
-
-              if (!isClosed) {
-                controller.enqueue(encoder.encode(data));
-              }
-            } else if (
-              err instanceof TypeError && err.message.includes("close")
-            ) {
-              isClosed = true;
-            } else {
-              throw err;
-            }
-          }
-        };
-
-        const write = async (
-          event: string,
-          data: Record<string, unknown>,
-        ): Promise<void> => {
-          const payload = `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
-          await queueChunk(payload);
-        };
-
-        try {
-          await log("debug", "responses: stream started", {
-            model: resolvedModel,
-          });
-          // Accumulate write Promises in a chain so every SSE event is fully
-          // enqueued before the next one starts. chatStream calls onChunk
-          // synchronously, so without chaining the awaited writes inside the
-          // loop would be deferred to microtasks — causing events like
-          // response.completed to arrive after data: [DONE].
-          let eventCount = 0;
-          let pendingWrites: Promise<void> = Promise.resolve();
-          await chatStream({ ...anthropicReq, stream: true }, (event) => {
-            eventCount++;
-            const mapped = mapStreamEventToResponses(event, state);
-            pendingWrites = pendingWrites.then(async () => {
-              await log("debug", "responses: upstream event", {
-                type: event.type,
-                sseCount: mapped.length,
-                ...(event.type === "content_block_delta" &&
-                    event.delta &&
-                    typeof event.delta === "object" &&
-                    "type" in event.delta &&
-                    event.delta.type === "text_delta" &&
-                    "text" in event.delta &&
-                    typeof (event.delta as Record<string, unknown>).text ===
-                      "string"
-                  ? {
-                    textSnippet: String(
-                      (event.delta as Record<string, unknown>).text,
-                    ).slice(0, 80),
-                  }
-                  : {}),
-              });
-              for (const responseEvent of mapped) {
-                await log("debug", "responses: SSE event emitted", {
-                  event: responseEvent.event,
-                });
-                await write(responseEvent.event, responseEvent.data);
-              }
-            });
-          });
-          await pendingWrites;
-          await log("debug", "responses: upstream stream done", {
-            eventCount,
-            completed: state.completed,
-            textLength: state.text.length,
-          });
-
-          if (!state.completed && state.responseId && state.outputItemId) {
-            await log(
-              "debug",
-              "responses: fallback finalize — state.completed was false",
-            );
-            for (const event of finalizeContent(state)) {
-              await write(event.event, event.data);
-            }
-
-            const usage = state.usage ?? usageFromCounts(0, 0);
-            const output = [
-              messageOutput(state.text),
-              ...toFunctionCallOutputItems(state),
-            ];
-            const responseBody = buildResponsesBody(
-              state.responseId,
-              state.createdAt,
-              state.requestedModel,
-              state.text,
-              usage,
-              output,
-            );
-
-            await write("response.output_item.done", {
-              type: "response.output_item.done",
-              response_id: state.responseId,
-              output_index: 0,
-              item: {
-                id: state.outputItemId,
-                type: "message",
-                role: "assistant",
-                status: "completed",
-                content: [{ type: "output_text", text: state.text }],
-              },
-            });
-
-            await write("response.completed", {
-              type: "response.completed",
-              response: responseBody,
-            });
-            state.completed = true;
-          }
-
-          if (!isClosed) {
-            await log("debug", "responses: sending [DONE]");
-            await queueChunk("data: [DONE]\n\n");
-          }
-        } catch (err) {
-          const message = err instanceof Error
-            ? err.message
-            : "Service unavailable";
-          await log("warn", "responses: stream error caught", {
-            message,
-            stack: err instanceof Error
-              ? err.stack?.split("\n").slice(0, 4).join(" | ")
-              : undefined,
-          });
-          if (!isClosed) {
-            await write("error", {
-              type: "error",
-              error: openAIErrorBody(
-                message,
-                "api_error",
-                "service_unavailable",
-              ).error,
-            });
-            await queueChunk("data: [DONE]\n\n");
-          }
-        } finally {
-          if (!isClosed) {
-            isClosed = true;
-            controller.close();
-          }
-        }
-      },
-    }, {
-      highWaterMark: config.streaming.highWaterMark,
-    });
-
-    return new Response(stream, {
-      status: 200,
-      headers: EVENT_STREAM_HEADERS,
-    });
-  }
-
   try {
-    await log("debug", "responses: non-stream request", {
+    const upstream = await proxyResponses({
+      ...proxiedBody,
       model: resolvedModel,
     });
-    const responseBody = await getResponsesBody(
-      anthropicReq,
-      responsesReq.model,
-    );
 
-    return jsonResponse(responseBody);
+    await log("debug", "responses: upstream response", {
+      status: upstream.status,
+      stream: responsesReq.stream ?? false,
+    });
+
+    if (!upstream.ok) {
+      const errorText = await upstream.text().catch(() => "");
+      await log("warn", "responses: upstream error", {
+        status: upstream.status,
+        body: errorText.slice(0, 200),
+      });
+      return new Response(errorText, {
+        status: upstream.status,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    // Pass Copilot's response through directly — headers, body, status.
+    // For streaming this is text/event-stream; for non-streaming application/json.
+    return new Response(upstream.body, {
+      status: upstream.status,
+      headers: upstream.headers,
+    });
   } catch (err) {
-    await log("warn", "responses: non-stream error", {
+    await log("warn", "responses: proxy error", {
       message: err instanceof Error ? err.message : String(err),
     });
     return openAIServiceUnavailable(err);
