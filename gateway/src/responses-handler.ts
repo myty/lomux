@@ -117,6 +117,29 @@ async function normalizeUpstreamError(upstream: Response): Promise<Response> {
   );
 }
 
+const UNSUPPORTED_TOOL_TYPES = new Set([
+  "image_generation",
+]);
+
+/**
+ * Remove tool entries whose `type` is not supported by the upstream API.
+ * Returns the original array when nothing needs to be removed.
+ */
+function stripUnsupportedTools(
+  tools: unknown[] | undefined,
+): unknown[] | undefined {
+  if (!Array.isArray(tools)) return tools;
+  const filtered = tools.filter(
+    (t) =>
+      !(t && typeof t === "object" && "type" in t &&
+        typeof (t as Record<string, unknown>).type === "string" &&
+        UNSUPPORTED_TOOL_TYPES.has(
+          (t as Record<string, unknown>).type as string,
+        )),
+  );
+  return filtered.length === tools.length ? tools : filtered;
+}
+
 // ---------------------------------------------------------------------------
 // Handler
 // ---------------------------------------------------------------------------
@@ -154,9 +177,22 @@ export async function handleResponses(req: Request): Promise<Response> {
   }
 
   const normalizedInput = normalizeInput(responsesReq.input);
-  const proxiedBody = normalizedInput === responsesReq.input
-    ? (body as Record<string, unknown>)
-    : { ...(body as Record<string, unknown>), input: normalizedInput };
+  const normalizedTools = stripUnsupportedTools(
+    (body as Record<string, unknown>).tools as unknown[] | undefined,
+  );
+
+  const needsPatch = normalizedInput !== responsesReq.input ||
+    normalizedTools !== (body as Record<string, unknown>).tools;
+  const proxiedBody = needsPatch
+    ? {
+      ...(body as Record<string, unknown>),
+      ...(normalizedInput !== responsesReq.input && { input: normalizedInput }),
+      ...(normalizedTools !==
+          (body as Record<string, unknown>).tools && {
+        tools: normalizedTools,
+      }),
+    }
+    : (body as Record<string, unknown>);
 
   const resolutionOrResponse = await resolveOpenAIModelCandidates(
     responsesReq.model,
