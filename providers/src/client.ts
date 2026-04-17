@@ -143,14 +143,16 @@ function toOpenAIMessages(req: ProxyRequest): OpenAIMessage[] {
 }
 
 function toOpenAITools(tools: Tool[]): OpenAITool[] {
-  return tools.map((tool) => ({
-    type: "function" as const,
-    function: {
-      name: tool.name,
-      ...(tool.description && { description: tool.description }),
-      parameters: tool.input_schema,
-    },
-  }));
+  return tools
+    .filter((tool) => typeof tool.name === "string" && tool.name.length > 0)
+    .map((tool) => ({
+      type: "function" as const,
+      function: {
+        name: tool.name,
+        ...(tool.description && { description: tool.description }),
+        parameters: tool.input_schema,
+      },
+    }));
 }
 
 function toOpenAIToolChoice(

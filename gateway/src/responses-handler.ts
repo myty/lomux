@@ -620,6 +620,15 @@ export async function handleResponses(req: Request): Promise<Response> {
     resolved: resolvedModel,
   });
 
+  const rawTools = responsesReq.tools ?? [];
+  const normalizedTools = normalizeResponsesTools(responsesReq.tools);
+  await log("debug", "responses: tools normalized", {
+    rawCount: rawTools.length,
+    rawTypes: rawTools.map((t) => `${t.type}:${t.name ?? "(none)"}`),
+    normalizedCount: normalizedTools?.length ?? 0,
+    normalizedNames: normalizedTools?.map((t) => t.function.name) ?? [],
+  });
+
   const anthropicReq: ProxyRequest = {
     ...openAIToAnthropic({
       model: responsesReq.model,
@@ -628,7 +637,7 @@ export async function handleResponses(req: Request): Promise<Response> {
       stream: false,
       temperature: responsesReq.temperature,
       top_p: responsesReq.top_p,
-      tools: normalizeResponsesTools(responsesReq.tools),
+      tools: normalizedTools,
       tool_choice: normalizeResponsesToolChoice(responsesReq.tool_choice),
     }),
     model: resolvedModel,
