@@ -18,7 +18,7 @@ let cachedAvailableModels: string[] = [];
 let cacheExpiresAt = 0;
 
 const CHAT_COMPAT_FALLBACKS: string[] = [
-  "gpt-4.1-copilot",
+  "gpt-41-copilot",
   "gpt-4.1-2025-04-14",
   "gpt-4.1",
   "gpt-4o-2024-11-20",
@@ -26,6 +26,23 @@ const CHAT_COMPAT_FALLBACKS: string[] = [
   "gpt-4o-mini-2024-07-18",
   "gpt-4o-mini",
   "gpt-4-turbo",
+];
+
+/**
+ * Models known to work only with chat/completions, not with /v1/responses.
+ * Copilot-specific model IDs fall into this category.
+ */
+const CHAT_ONLY_MODELS = new Set(["gpt-41-copilot"]);
+
+/**
+ * Ordered fallback list for the /v1/responses endpoint.
+ * Uses standard OpenAI model IDs that the responses endpoint accepts.
+ */
+const RESPONSES_COMPAT_FALLBACKS: string[] = [
+  "gpt-4.1",
+  "gpt-4.1-2025-04-14",
+  "gpt-4o",
+  "gpt-4o-mini",
 ];
 
 function uniq(values: string[]): string[] {
@@ -51,20 +68,28 @@ function isLikelyUnsupportedByChatCompletions(model: string): boolean {
   return lower.includes("codex") || lower.startsWith("gpt-5");
 }
 
-function familyCandidates(requestedModel: string): string[] {
+function familyCandidates(
+  requestedModel: string,
+  endpoint: ModelEndpoint,
+): string[] {
   const lower = requestedModel.toLowerCase();
+  const fallbacks = endpoint === "responses"
+    ? RESPONSES_COMPAT_FALLBACKS
+    : CHAT_COMPAT_FALLBACKS;
 
   if (lower.startsWith("gpt-5") || lower.includes("codex")) {
-    return CHAT_COMPAT_FALLBACKS;
+    return fallbacks;
   }
   if (lower.startsWith("gpt-4.1") || lower.startsWith("gpt-41")) {
-    return ["gpt-4.1-copilot", "gpt-4.1-2025-04-14", "gpt-4.1", "gpt-4o"];
+    return endpoint === "responses"
+      ? ["gpt-4.1", "gpt-4.1-2025-04-14", "gpt-4o"]
+      : ["gpt-41-copilot", "gpt-4.1-2025-04-14", "gpt-4.1", "gpt-4o"];
   }
   if (lower.startsWith("gpt-4o")) {
     return ["gpt-4o-2024-11-20", "gpt-4o", "gpt-4o-mini"];
   }
 
-  return CHAT_COMPAT_FALLBACKS;
+  return fallbacks;
 }
 
 function pickFirstAvailable(
@@ -94,8 +119,7 @@ export async function resolveModelForEndpoint(
     normalizedDashed,
   ]);
 
-  const usesChatCompletionsBackend = endpoint === "chat_completions" ||
-    endpoint === "responses";
+  const usesChatCompletionsBackend = endpoint === "chat_completions";
 
   if (policy === "strict") {
     const canUseExact = available.has(requestedModel) &&
@@ -116,29 +140,14 @@ export async function resolveModelForEndpoint(
       strategy: "strict-reject",
       rejected: true,
       rejectReason:
-        `Model \"${requestedModel}\" is not endpoint-compatible without remapping`,
+        `Model "${requestedModel}" is not endpoint-compatible without remapping`,
     };
   }
 
-  // If there's an explicit alias (user override or DEFAULT_MODEL_MAP), honour it —
-  // aliases exist precisely because the raw model name doesn't work with
-  // chat/completions (e.g. gpt-5.3-codex is responses-only on Copilot).
-  if (aliasResolved !== requestedModel) {
-    const aliasTarget = available.has(aliasResolved)
-      ? aliasResolved
-      : pickFirstAvailable(familyCandidates(requestedModel), available) ??
-        aliasResolved;
-    return {
-      requestedModel,
-      resolvedModel: aliasTarget,
-      strategy: aliasTarget === aliasResolved
-        ? "alias-or-normalized"
-        : "family-fallback",
-    };
-  }
-
-  // No alias — if the exact model is in the live Copilot list use it directly.
-  if (usesChatCompletionsBackend && available.has(requestedModel)) {
+  // For the responses endpoint, a model that appears directly in the live
+  // Copilot list should be used as-is — aliases were designed for
+  // chat/completions and may point to chat-only model IDs.
+  if (endpoint === "responses" && available.has(requestedModel)) {
     return {
       requestedModel,
       resolvedModel: requestedModel,
@@ -146,19 +155,55 @@ export async function resolveModelForEndpoint(
     };
   }
 
-  if (!usesChatCompletionsBackend) {
-    const direct = pickFirstAvailable(directCandidates, available);
-    if (direct) {
+  // If there's an explicit alias (user override or DEFAULT_MODEL_MAP), honour it —
+  // unless we're on the responses endpoint and the alias resolves to a model
+  // known to be chat/completions-only.
+  if (aliasResolved !== requestedModel) {
+    const aliasUsable = endpoint !== "responses" ||
+      !CHAT_ONLY_MODELS.has(aliasResolved);
+
+    if (aliasUsable) {
+      const aliasTarget = available.has(aliasResolved)
+        ? aliasResolved
+        : pickFirstAvailable(
+          familyCandidates(requestedModel, endpoint),
+          available,
+        ) ??
+          aliasResolved;
       return {
         requestedModel,
-        resolvedModel: direct,
-        strategy: direct === requestedModel ? "exact" : "alias-or-normalized",
+        resolvedModel: aliasTarget,
+        strategy: aliasTarget === aliasResolved
+          ? "alias-or-normalized"
+          : "family-fallback",
       };
     }
+
+    // Alias is chat-only; fall through to responses-compatible fallback.
   }
 
-  // For chat/completions-backed endpoints, avoid known unsupported families.
-  if (!isLikelyUnsupportedByChatCompletions(requestedModel)) {
+  // No alias (or alias skipped) — if the exact model is available use it.
+  if (available.has(requestedModel)) {
+    return {
+      requestedModel,
+      resolvedModel: requestedModel,
+      strategy: "exact",
+    };
+  }
+
+  // For chat/completions, avoid known unsupported families.
+  if (usesChatCompletionsBackend) {
+    if (!isLikelyUnsupportedByChatCompletions(requestedModel)) {
+      const direct = pickFirstAvailable(directCandidates, available);
+      if (direct) {
+        return {
+          requestedModel,
+          resolvedModel: direct,
+          strategy: direct === requestedModel ? "exact" : "alias-or-normalized",
+        };
+      }
+    }
+  } else {
     const direct = pickFirstAvailable(directCandidates, available);
     if (direct) {
       return {
@@ -170,7 +215,7 @@ export async function resolveModelForEndpoint(
   }
 
   const family = pickFirstAvailable(
-    familyCandidates(requestedModel),
+    familyCandidates(requestedModel, endpoint),
     available,
   );
   if (family) {
